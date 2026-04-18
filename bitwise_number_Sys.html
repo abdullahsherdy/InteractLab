@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitwise Operations — Interactive Teacher</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f4; --bg3: #eeede9;
+    --text: #111827; --text2: #6b7280; --text3: #9ca3af;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --radius: 8px; --radius-lg: 12px;
+    --mono: 'Courier New', monospace; --sans: system-ui, sans-serif;
+    --green: #1D9E75; --green-dark: #0F6E56; --green-light: #E1F5EE;
+    --amber: #BA7517; --amber-dark: #854F0B; --amber-light: #FAEEDA;
+    --purple: #534AB7; --purple-dark: #3C3489; --purple-light: #EEEDFE;
+    --teal-tab: #178C65;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+      --text: #f0ede8; --text2: #9ca3af; --text3: #6b7280;
+      --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.20);
+      --green-light: #04342C; --amber-light: #412402; --purple-light: #26215C;
+    }
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); padding: 24px 20px; max-width: 740px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+  .bw-nav { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+  .bw-tab { padding: 6px 14px; font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text2); cursor: pointer; font-family: var(--mono); transition: background .15s, color .15s; }
+  .bw-tab:hover { background: var(--bg2); }
+  .bw-tab.active { background: var(--teal-tab); color: #fff; border-color: var(--teal-tab); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .bw-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; letter-spacing: .06em; text-transform: uppercase; font-family: var(--sans); }
+  .bw-section { margin-bottom: 24px; }
+  .bw-input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
+  .bw-input-row label { display: block; }
+  input[type=number] { width: 100px; padding: 6px 10px; font-size: 14px; font-family: var(--mono); border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; }
+  input[type=number]:focus { border-color: var(--teal-tab); box-shadow: 0 0 0 2px rgba(23,140,101,.2); }
+  input[type=range] { flex: 1; min-width: 120px; accent-color: var(--teal-tab); }
+  select { padding: 6px 10px; font-size: 14px; font-family: var(--mono); border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; cursor: pointer; }
+  select:focus { border-color: var(--teal-tab); }
+  button { padding: 6px 16px; font-size: 13px; font-family: var(--mono); border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer; transition: background .15s; }
+  button:hover { background: var(--bg2); }
+  button.primary { background: var(--teal-tab); color: #fff; border-color: var(--teal-tab); }
+  button.primary:hover { opacity: .9; }
+  .bit-row { display: flex; gap: 3px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0; }
+  .bit-box { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 16px; font-weight: 500; border: 1.5px solid transparent; }
+  .bit-one  { background: var(--green);  border-color: var(--green-dark); color: var(--green-light); }
+  .bit-zero { background: var(--bg2); border-color: var(--border); color: var(--text2); }
+  .bit-active { background: var(--amber); border-color: var(--amber-dark); color: var(--amber-light); }
+  .bit-result { background: var(--purple); border-color: var(--purple-dark); color: var(--purple-light); }
+  .bit-pos  { font-size: 10px; color: var(--text3); text-align: center; width: 32px; font-family: var(--mono); }
+  .result-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-top: 10px; }
+  .result-num { font-size: 28px; font-weight: 500; color: var(--text); font-family: var(--mono); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: var(--sans); }
+  .tag-a { background: var(--green-light); color: var(--green-dark); }
+  .tag-b { background: var(--amber-light); color: var(--amber-dark); }
+  .tag-r { background: var(--purple-light); color: var(--purple-dark); }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 20px 0; }
+  .bw-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 10px; }
+  .bw-card h3 { font-size: 14px; font-weight: 500; margin: 0 0 6px; color: var(--text); }
+  .bw-card p  { font-size: 13px; color: var(--text2); margin: 0; line-height: 1.6; }
+  .mono { font-family: var(--mono); background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+  .real-world { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 10px; }
+  .ns-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .ns-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text2); padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
+  .ns-table td { padding: 5px 8px; border-bottom: 0.5px solid var(--border); font-family: var(--mono); }
+  .ns-table td:first-child { color: var(--text2); font-size: 12px; font-family: var(--sans); }
+  .div-step { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; border-bottom: 0.5px solid var(--border); font-family: var(--mono); }
+  .div-step:last-child { border-bottom: none; }
+  .rem { display: inline-block; width: 18px; height: 18px; border-radius: 3px; text-align: center; line-height: 18px; font-size: 12px; font-weight: 500; }
+  .rem-1 { background: var(--green); color: var(--green-light); }
+  .rem-0 { background: var(--bg3); color: var(--text2); }
+  .step-num { color: var(--text3); font-size: 12px; width: 60px; font-family: var(--sans); }
+  .sep { height: 1px; background: var(--border2); margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<h1>Bitwise Operations — Interactive Teacher</h1>
+<p class="subtitle">Coding Mentorship Program · Session Visual</p>
+
+<div class="bw-nav">
+  <button class="bw-tab active" onclick="showPanel('ns')">1 — number systems</button>
+  <button class="bw-tab" onclick="showPanel('conv')">2 — decimal → binary</button>
+  <button class="bw-tab" onclick="showPanel('ops')">3 — bitwise playground</button>
+  <button class="bw-tab" onclick="showPanel('rw')">4 — real-world use</button>
+</div>
+
+<!-- PANEL 1: NUMBER SYSTEMS -->
+<div id="p-ns" class="panel active">
+  <div class="bw-section">
+    <div class="bw-label">the three number systems</div>
+    <table class="ns-table">
+      <tr><th>system</th><th>digits used</th><th>base</th><th>example: 42</th></tr>
+      <tr><td>decimal (human)</td><td>0 1 2 3 4 5 6 7 8 9</td><td>10</td><td>42</td></tr>
+      <tr><td>binary (computer)</td><td>0  1</td><td>2</td><td>0b101010</td></tr>
+      <tr><td>hexadecimal (compact)</td><td>0–9  A B C D E F</td><td>16</td><td>0x2A</td></tr>
+    </table>
+  </div>
+  <hr class="divider">
+  <div class="bw-section">
+    <div class="bw-label">what each bit position is worth</div>
+    <p style="font-size:13px;color:var(--text2);margin:0 0 10px">Each position is a power of 2. Reading RIGHT to LEFT: 1, 2, 4, 8, 16, 32, 64, 128.</p>
+    <div class="bit-row" id="pos-demo"></div>
+    <div class="bit-row" id="pos-vals"></div>
+    <p style="font-size:12px;color:var(--text2);margin:6px 0 0">→ a byte = 8 bits. maximum value: 11111111 in binary = 255 in decimal.</p>
+  </div>
+  <hr class="divider">
+  <div class="bw-section">
+    <div class="bw-label">drag to explore — any number 0–255</div>
+    <div class="bw-input-row">
+      <input type="range" min="0" max="255" value="42" id="ns-slider">
+      <span style="font-size:22px;font-weight:500;min-width:44px;text-align:right;font-family:var(--mono)" id="ns-dec">42</span>
+    </div>
+    <div class="bit-row" id="ns-bits"></div>
+    <div class="bit-row" id="ns-bitpos"></div>
+  </div>
+</div>
+
+<!-- PANEL 2: CONVERSION -->
+<div id="p-conv" class="panel">
+  <div class="bw-section">
+    <div class="bw-label">step-by-step: decimal to binary</div>
+    <p style="font-size:13px;color:var(--text2);margin:0 0 12px">The trick: keep dividing by 2. The remainders, read bottom-to-top, give you the binary number.</p>
+    <div class="bw-input-row">
+      <input type="number" id="conv-in" value="42" min="0" max="255" placeholder="enter 0–255">
+      <button onclick="runConversion()">convert</button>
+    </div>
+  </div>
+  <div id="conv-steps"></div>
+  <div id="conv-result" class="result-box" style="display:none"></div>
+</div>
+
+<!-- PANEL 3: BITWISE PLAYGROUND -->
+<div id="p-ops" class="panel">
+  <div class="bw-section">
+    <div class="bw-input-row">
+      <div>
+        <div class="bw-label"><span class="tag tag-a">A</span> first number</div>
+        <input type="number" id="op-a" value="12" min="0" max="255">
+      </div>
+      <div>
+        <div class="bw-label">operator</div>
+        <select id="op-sel">
+          <option value="and">&amp; (AND)</option>
+          <option value="or">| (OR)</option>
+          <option value="xor">^ (XOR)</option>
+          <option value="not">~ (NOT A only)</option>
+          <option value="shl">&lt;&lt; (left shift)</option>
+          <option value="shr">&gt;&gt; (right shift)</option>
+        </select>
+      </div>
+      <div id="b-group">
+        <div class="bw-label"><span class="tag tag-b">B</span> second number</div>
+        <input type="number" id="op-b" value="10" min="0" max="255">
+      </div>
+      <button onclick="runOp()" style="margin-top:18px">calculate</button>
+    </div>
+  </div>
+  <div id="op-vis"></div>
+</div>
+
+<!-- PANEL 4: REAL WORLD -->
+<div id="p-rw" class="panel">
+  <div class="bw-label">where you will actually see bitwise operators in real code</div>
+  <div class="real-world">
+    <div class="bw-card">
+      <h3>even / odd check</h3>
+      <p>Instead of <span class="mono">n % 2 == 0</span>, use <span class="mono">(n &amp; 1) == 0</span>. Last bit of any even number is always 0. This is what low-level code does.</p>
+    </div>
+    <div class="bw-card">
+      <h3>power of 2 check</h3>
+      <p><span class="mono">n &amp; (n-1) == 0</span> — a power of 2 has exactly one 1-bit. Subtracting 1 flips all bits below it. AND gives 0.</p>
+    </div>
+  </div>
+  <div class="real-world" style="margin-top:10px">
+    <div class="bw-card">
+      <h3>file permission flags (Linux)</h3>
+      <p><span class="mono">chmod 755</span> is bitwise flags. Read=4, Write=2, Execute=1. OR them: <span class="mono">4|2|1 = 7</span> = full access.</p>
+    </div>
+    <div class="bw-card">
+      <h3>RGB color masking</h3>
+      <p>Extract red from <span class="mono">0xFF5733</span>: <span class="mono">(color &gt;&gt; 16) &amp; 0xFF</span> = <span class="mono">255</span>. Used in every browser and image editor.</p>
+    </div>
+  </div>
+  <div class="real-world" style="margin-top:10px">
+    <div class="bw-card">
+      <h3>multiply / divide by 2 fast</h3>
+      <p><span class="mono">n &lt;&lt; 1</span> = n × 2. <span class="mono">n &gt;&gt; 1</span> = n ÷ 2. Compilers use this internally for speed.</p>
+    </div>
+    <div class="bw-card">
+      <h3>interview patterns (LeetCode)</h3>
+      <p>Single number, counting bits, missing number, subset generation. All use XOR or AND. Once you see the pattern, these become straightforward.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const panels = ['ns','conv','ops','rw'];
+function showPanel(id) {
+  panels.forEach(p => document.getElementById('p-'+p).classList.toggle('active', p===id));
+  document.querySelectorAll('.bw-tab').forEach((t,i) => t.classList.toggle('active', panels[i]===id));
+  if(id==='conv') runConversion();
+  if(id==='ops')  runOp();
+  if(id==='ns')   renderNS();
+}
+
+function toBin8(n) { return (((n%256)+256)%256).toString(2).padStart(8,'0'); }
+
+function bitRow(binStr, cls) {
+  return binStr.split('').map(b => `<div class="bit-box ${b==='1'?(cls||'bit-one'):'bit-zero'}">${b}</div>`).join('');
+}
+function posRow() {
+  return Array.from({length:8},(_,i)=>`<div class="bit-pos">${7-i}</div>`).join('');
+}
+
+function renderNS() {
+  const powers = Array.from({length:8},(_,i)=>{
+    const val = Math.pow(2,7-i);
+    return `<div class="bit-box bit-one">${val}</div>`;
+  }).join('');
+  document.getElementById('pos-demo').innerHTML = powers;
+  document.getElementById('pos-vals').innerHTML = posRow();
+  updateNSSlider();
+}
+
+function updateNSSlider() {
+  const v = parseInt(document.getElementById('ns-slider').value)||0;
+  document.getElementById('ns-dec').textContent = v;
+  const b = toBin8(v);
+  document.getElementById('ns-bits').innerHTML = bitRow(b);
+  document.getElementById('ns-bitpos').innerHTML = posRow();
+}
+document.getElementById('ns-slider').addEventListener('input', updateNSSlider);
+renderNS();
+
+function runConversion() {
+  const n = Math.min(255, Math.max(0, parseInt(document.getElementById('conv-in').value)||0));
+  const steps = [];
+  let tmp = n;
+  if(tmp === 0) { steps.push({q:0,r:0,orig:0}); }
+  else { while(tmp > 0) { steps.push({q:Math.floor(tmp/2), r:tmp%2, orig:tmp}); tmp=Math.floor(tmp/2); } }
+
+  document.getElementById('conv-steps').innerHTML = `<div class="result-box">${
+    steps.map((s,i)=>`<div class="div-step"><span class="step-num">step ${i+1}</span><span>${s.orig} ÷ 2 = ${s.q}&nbsp;&nbsp;remainder&nbsp;</span><span class="rem ${s.r?'rem-1':'rem-0'}">${s.r}</span></div>`).join('')
+  }<p style="font-size:12px;color:var(--text2);margin:8px 0 0">↑ read the remainders bottom to top</p></div>`;
+
+  const bin = toBin8(n);
+  const contrib = bin.split('').reverse().map((b,i)=>b==='1'?Math.pow(2,i):0).filter(v=>v>0).join(' + ');
+  document.getElementById('conv-result').style.display='block';
+  document.getElementById('conv-result').innerHTML = `
+    <div class="bw-label">result: ${n} in binary</div>
+    <div class="bit-row">${bitRow(bin)}</div>
+    <div class="bit-row">${posRow()}</div>
+    <p style="margin:8px 0 0;font-size:13px;color:var(--text2)">verify: ${contrib} = ${n}</p>`;
+}
+document.getElementById('conv-in').addEventListener('input', runConversion);
+
+function runOp() {
+  const a = parseInt(document.getElementById('op-a').value)||0;
+  const b = parseInt(document.getElementById('op-b').value)||0;
+  const op = document.getElementById('op-sel').value;
+  const isUnary = op==='not'||op==='shl'||op==='shr';
+  document.getElementById('b-group').style.opacity = isUnary ? '0.4':'1';
+
+  let result, opSymbol, explanation;
+  if(op==='and') { result=a&b; opSymbol='&'; explanation='keeps a bit only when BOTH A and B have 1 in that position'; }
+  else if(op==='or')  { result=a|b; opSymbol='|'; explanation='keeps a bit when EITHER A or B has 1 in that position'; }
+  else if(op==='xor') { result=a^b; opSymbol='^'; explanation='keeps a bit only when A and B DIFFER in that position'; }
+  else if(op==='not') { result=(~a)&0xFF; opSymbol='~'; explanation='flips every bit: 0→1 and 1→0 (shown as 8-bit unsigned)'; }
+  else if(op==='shl') { result=(a<<(b&7))&0xFF; opSymbol='<<'; explanation=`shifts A's bits ${b&7} position(s) left — multiplies by ${Math.pow(2,b&7)}`; }
+  else                { result=(a>>(b&7))&0xFF; opSymbol='>>'; explanation=`shifts A's bits ${b&7} position(s) right — divides by ${Math.pow(2,b&7)}`; }
+
+  const binR = toBin8(result);
+  const binA = toBin8(a);
+  const binB = toBin8(b);
+
+  const colExpl = op==='and'?'keep only the 1s that appear in BOTH rows above':
+                  op==='or'?'keep any 1 from either row above':
+                  op==='xor'?'keep 1s only where the two rows DISAGREE':
+                  op==='not'?'all bits flipped':
+                  op==='shl'?`bits moved left ${b&7} place(s), zeros fill from right`:`bits moved right ${b&7} place(s), zeros fill from left`;
+
+  let bitVis = '';
+  if(op==='not') {
+    bitVis = `<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span class="tag tag-a">A</span><span style="font-size:13px;color:var(--text2)">${a}</span></div>
+              <div class="bit-row">${bitRow(binA,'bit-one')}</div>
+              <div style="font-size:16px;margin:4px 0;color:var(--text2)">~ (flip all)</div>`;
+  } else {
+    bitVis = `<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span class="tag tag-a">A</span><span style="font-size:13px;color:var(--text2)">${a}</span></div>
+              <div class="bit-row">${bitRow(binA,'bit-one')}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span class="tag tag-b">B</span><span style="font-size:13px;color:var(--text2)">${isUnary?'shift by '+(b&7):b}</span></div>
+              <div class="bit-row">${isUnary?`<span style="font-size:13px;color:var(--text2);font-family:var(--sans)">shift ${b&7} place(s)</span>`:bitRow(binB,'bit-active')}</div>
+              <div class="sep"></div>`;
+  }
+
+  document.getElementById('op-vis').innerHTML = `<div class="result-box">
+    ${bitVis}
+    <div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span class="tag tag-r">result</span><span style="font-size:12px;color:var(--text2)">${colExpl}</span></div>
+    <div class="bit-row">${bitRow(binR,'bit-result')}</div>
+    <div class="bit-row">${posRow()}</div>
+    <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <span style="font-family:var(--mono);font-size:14px;color:var(--text2)">${a} ${opSymbol} ${isUnary?'':b} =</span>
+      <span class="result-num">${result}</span>
+      <span style="font-size:13px;color:var(--text2)">(binary: ${binR})</span>
+    </div>
+    <div style="margin-top:6px;font-size:12px;color:var(--text2)">${explanation}</div>
+  </div>`;
+}
+document.getElementById('op-a').addEventListener('input', runOp);
+document.getElementById('op-b').addEventListener('input', runOp);
+document.getElementById('op-sel').addEventListener('change', runOp);
+runConversion();
+runOp();
+</script>
+</body>
+</html>
