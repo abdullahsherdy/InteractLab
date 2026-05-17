@@ -8,3 +8,13 @@
     });
   }
 })();
+
+// Insert current year into any element with id 'copyright-year'
+(function () {
+  try {
+    var el = document.getElementById('copyright-year');
+    if (el) el.textContent = new Date().getFullYear();
+  } catch (e) {
+    // silent fail
+  }
+})();
