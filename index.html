@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="InteractLab — free interactive programming tutorials. Learn bitwise ops, recursion, Big-O, and sorting algorithms with step-by-step visualizers.">
+  <title>InteractLab — Interactive Programming Tutorials</title>
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body class="site-body">
+  <div class="home-wrap">
+    <header class="site-header">
+      <a class="site-logo" href="index.html">
+        <span class="logo-mark">{ }</span>
+        <span class="logo-text">Interact<span>Lab</span></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+      <nav class="site-nav" aria-label="Main">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="bitwise-and-number-systems.html" class="nav-link">Bitwise &amp; Numbers</a>
+        <a href="recursion-and-big-o.html" class="nav-link">Recursion &amp; Big-O</a>
+        <a href="sorting-algorithms.html" class="nav-link">Sorting</a>
+      </nav>
+    </header>
+
+    <section class="home-hero">
+      <div class="home-hero-inner">
+        <p class="home-eyebrow">Coding mentorship · learn by doing</p>
+        <h1>See algorithms <em>work</em>, not just read about them</h1>
+        <p class="home-lead">
+          Step through code with live visualizers—bits flipping, stacks growing, bars swapping.
+          Built for students who want intuition before memorizing syntax.
+        </p>
+        <div class="home-cta-row">
+          <a class="btn btn-primary" href="#tutorials">Browse tutorials</a>
+          <a class="btn btn-ghost" href="bitwise-and-number-systems.html">Start with foundations →</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="tutorials" class="home-section">
+      <div class="section-head">
+        <h2>Interactive tutorials</h2>
+        <p>Each lesson is a self-contained page with tabs, demos, and real test cases from study guides.</p>
+      </div>
+      <div class="tutorial-grid">
+        <a class="tutorial-card" href="bitwise-and-number-systems.html">
+          <div class="card-icon teal" aria-hidden="true">01</div>
+          <h3>Bitwise &amp; Number Systems</h3>
+          <p>Binary, hex, decimal conversion, AND/OR/XOR/NOT/shift playground, and where bitwise ops appear in real software.</p>
+          <div class="card-meta">
+            <span>number systems</span>
+            <span>bitwise ops</span>
+            <span>foundations</span>
+          </div>
+          <span class="card-arrow">Open tutorial →</span>
+        </a>
+        <a class="tutorial-card" href="recursion-and-big-o.html">
+          <div class="card-icon purple" aria-hidden="true">02</div>
+          <h3>Recursion &amp; Big-O</h3>
+          <p>Watch the call stack grow, explore Fibonacci trees, compare growth curves, and practice the six-step recursion method.</p>
+          <div class="card-meta">
+            <span>call stack</span>
+            <span>complexity</span>
+            <span>recursion</span>
+          </div>
+          <span class="card-arrow">Open tutorial →</span>
+        </a>
+        <a class="tutorial-card" href="sorting-algorithms.html">
+          <div class="card-icon amber" aria-hidden="true">03</div>
+          <h3>Sorting Algorithms</h3>
+          <p>Bubble, selection, insertion, merge, and quick sort—step through swaps, compare runtimes, and learn when to use each.</p>
+          <div class="card-meta">
+            <span>O(n²)</span>
+            <span>O(n log n)</span>
+            <span>Python</span>
+          </div>
+          <span class="card-arrow">Open tutorial →</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="home-section">
+      <div class="section-head">
+        <h2>Suggested learning path</h2>
+        <p>Follow this order if you are new to low-level concepts and algorithm analysis.</p>
+      </div>
+      <div class="path-steps">
+        <div class="path-step">
+          <span class="path-num">1</span>
+          <div>
+            <h4>Understand how computers count</h4>
+            <p>Bits, bases, and bitwise operators are the vocabulary for everything else.</p>
+            <a href="bitwise-and-number-systems.html">Go to Bitwise &amp; Number Systems →</a>
+          </div>
+        </div>
+        <div class="path-step">
+          <span class="path-num">2</span>
+          <div>
+            <h4>Master recursion and complexity</h4>
+            <p>Before optimizing sorts, you need to read recursive structure and Big-O notation.</p>
+            <a href="recursion-and-big-o.html">Go to Recursion &amp; Big-O →</a>
+          </div>
+        </div>
+        <div class="path-step">
+          <span class="path-num">3</span>
+          <div>
+            <h4>Compare sorting strategies</h4>
+            <p>See trade-offs between simple quadratic sorts and divide-and-conquer approaches.</p>
+            <a href="sorting-algorithms.html">Go to Sorting Algorithms →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section">
+      <div class="section-head">
+        <h2>How these lessons help</h2>
+      </div>
+      <div class="features-row">
+        <div class="feature-box">
+          <h4>Step-by-step mode</h4>
+          <p>Advance one operation at a time so you can predict the next state before clicking.</p>
+        </div>
+        <div class="feature-box">
+          <h4>Preset test cases</h4>
+          <p>Study-guide arrays and classic examples are built in—no setup required.</p>
+        </div>
+        <div class="feature-box">
+          <h4>Works offline</h4>
+          <p>Plain HTML/CSS/JS—open locally or host on GitHub Pages with zero backend.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <p>InteractLab · Interactive programming tutorials for mentorship programs.</p>
+      <p style="margin-top:8px"><a href="https://pages.github.com/">Host on GitHub Pages</a> · MIT-friendly static site</p>
+    </footer>
+  </div>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>

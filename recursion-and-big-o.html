@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursion &amp; Big-O — InteractLab</title>
+<link rel="stylesheet" href="assets/css/site.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f4; --bg3: #eeede9;
+  --text: #111827; --text2: #6b7280; --text3: #9ca3af;
+  --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+  --radius: 8px; --radius-lg: 12px;
+  --mono: 'Courier New', monospace; --sans: system-ui, sans-serif;
+  --green: #1D9E75; --green-dark: #0F6E56; --green-light: #E1F5EE;
+  --amber: #BA7517; --amber-dark: #854F0B; --amber-light: #FAEEDA;
+  --purple: #534AB7; --purple-dark: #3C3489; --purple-light: #EEEDFE;
+  --blue: #1D4ED8; --blue-dark: #1e3a8a; --blue-light: #DBEAFE;
+  --red: #B91C1C; --red-light: #FEE2E2;
+  --teal-tab: #178C65;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+    --text: #f0ede8; --text2: #9ca3af; --text3: #6b7280;
+    --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.20);
+    --green-light: #04342C; --amber-light: #412402; --purple-light: #26215C;
+    --blue-light: #1e3a8a; --red-light: #450a0a;
+  }
+}
+body { background: var(--bg); color: var(--text); font-family: var(--sans); padding: 0; max-width: none; margin: 0; }
+h1 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+.bw-nav { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.bw-tab { padding: 6px 14px; font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text2); cursor: pointer; font-family: var(--mono); transition: background .15s, color .15s; }
+.bw-tab:hover { background: var(--bg2); }
+.bw-tab.active { background: var(--teal-tab); color: #fff; border-color: var(--teal-tab); }
+.panel { display: none; }
+.panel.active { display: block; }
+.bw-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; letter-spacing: .06em; text-transform: uppercase; font-family: var(--sans); }
+.bw-section { margin-bottom: 24px; }
+.bw-input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
+input[type=number] { width: 90px; padding: 6px 10px; font-size: 14px; font-family: var(--mono); border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; }
+input[type=number]:focus, select:focus { border-color: var(--teal-tab); box-shadow: 0 0 0 2px rgba(23,140,101,.2); }
+input[type=range] { flex: 1; min-width: 120px; accent-color: var(--teal-tab); }
+select { padding: 6px 10px; font-size: 14px; font-family: var(--mono); border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; cursor: pointer; }
+button { padding: 6px 16px; font-size: 13px; font-family: var(--mono); border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer; transition: background .15s; }
+button:hover { background: var(--bg2); }
+button.primary { background: var(--teal-tab); color: #fff; border-color: var(--teal-tab); }
+button.primary:hover { opacity: .9; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.result-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-top: 10px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+.tag-base  { background: var(--green-light); color: var(--green-dark); }
+.tag-rec   { background: var(--amber-light); color: var(--amber-dark); }
+.tag-ret   { background: var(--purple-light); color: var(--purple-dark); }
+.tag-call  { background: var(--blue-light); color: var(--blue-dark); }
+.divider { border: none; border-top: 0.5px solid var(--border); margin: 20px 0; }
+.bw-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 10px; }
+.bw-card h3 { font-size: 14px; font-weight: 500; margin: 0 0 6px; color: var(--text); }
+.bw-card p { font-size: 13px; color: var(--text2); margin: 0; line-height: 1.6; }
+.mono { font-family: var(--mono); background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+code-block { display: block; background: #1e293b; color: #e2e8f0; font-family: var(--mono); font-size: 13px; border-radius: var(--radius-lg); padding: 14px 16px; line-height: 1.7; white-space: pre; overflow-x: auto; margin: 10px 0; }
+
+/* ── CALL STACK ── */
+.stack-wrap { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.stack-column { flex: 1; min-width: 200px; }
+.stack-label-row { font-size: 12px; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .05em; }
+.stack-arena { min-height: 280px; display: flex; flex-direction: column-reverse; gap: 4px; padding: 8px; background: var(--bg2); border-radius: var(--radius-lg); border: 0.5px solid var(--border); position: relative; }
+.stack-arena.empty::after { content: 'stack is empty'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text3); font-family: var(--mono); pointer-events: none; }
+.frame { padding: 10px 14px; border-radius: var(--radius); font-family: var(--mono); font-size: 13px; border: 1.5px solid transparent; transition: all 0.3s ease; animation: slideIn 0.3s ease; }
+.frame.active { border-color: var(--teal-tab); background: var(--bg3); }
+.frame.waiting { border-color: var(--border); background: var(--bg); opacity: .6; }
+.frame.returning { border-color: var(--purple); background: var(--purple-light); animation: pulse 0.4s ease; }
+.frame.base { border-color: var(--green-dark); background: var(--green-light); }
+@keyframes slideIn { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+.frame-fn { font-weight: 500; color: var(--text); }
+.frame-val { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.frame-ret { font-size: 12px; color: var(--purple); margin-top: 2px; font-weight: 500; }
+
+.step-info { background: var(--bg2); border-radius: var(--radius-lg); padding: 12px 16px; margin-top: 10px; font-size: 13px; line-height: 1.6; min-height: 60px; }
+.step-info .highlight { color: var(--teal-tab); font-weight: 500; }
+.step-controls { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.step-counter { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+/* ── FIBONACCI TREE ── */
+.fib-svg-wrap { overflow-x: auto; background: var(--bg2); border-radius: var(--radius-lg); padding: 12px; border: 0.5px solid var(--border); margin-top: 10px; }
+svg text { font-family: var(--mono); }
+.fib-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--text2); }
+.legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+/* ── BIG-O ── */
+.bigo-chart { width: 100%; overflow-x: auto; margin-top: 10px; }
+.bigo-bars-wrap { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding: 0 4px 0; position: relative; }
+.bigo-bar-group { display: flex; gap: 2px; align-items: flex-end; flex: 1; }
+.bigo-bar { border-radius: 4px 4px 0 0; transition: height .4s ease; min-width: 14px; position: relative; cursor: default; }
+.bigo-bar:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; font-family: var(--mono); pointer-events: none; }
+.bigo-x-labels { display: flex; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--text2); font-family: var(--mono); }
+.bigo-x-label { flex: 1; text-align: center; }
+.bigo-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
+.bigo-leg-item { display: flex; align-items: center; gap: 5px; color: var(--text2); }
+.bigo-leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── 6-STEP ── */
+.step6-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .step6-grid { grid-template-columns: 1fr; } }
+.step6-card { border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; cursor: pointer; transition: border-color .2s, background .2s; }
+.step6-card:hover { background: var(--bg2); }
+.step6-card.active { border-color: var(--teal-tab); background: var(--bg2); }
+.step6-num { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--teal-tab); margin-bottom: 4px; }
+.step6-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.step6-body { font-size: 13px; color: var(--text2); line-height: 1.5; display: none; margin-top: 8px; }
+.step6-card.active .step6-body { display: block; }
+.step6-example { background: #1e293b; color: #e2e8f0; font-family: var(--mono); font-size: 12px; border-radius: var(--radius); padding: 10px 12px; margin-top: 8px; line-height: 1.7; white-space: pre-wrap; }
+
+/* ── COMPLEXITY TABLE ── */
+.cplx-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.cplx-table th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text2); padding: 7px 10px; border-bottom: 0.5px solid var(--border); }
+.cplx-table td { padding: 6px 10px; border-bottom: 0.5px solid var(--border); vertical-align: top; }
+.cplx-table td:first-child { font-family: var(--mono); font-weight: 500; font-size: 14px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-fast { background: var(--green-light); color: var(--green-dark); }
+.badge-ok   { background: var(--amber-light); color: var(--amber-dark); }
+.badge-slow { background: var(--red-light); color: var(--red); }
+
+/* ── PLAYGROUND ── */
+.pg-output { font-family: var(--mono); font-size: 13px; background: var(--bg2); border-radius: var(--radius-lg); padding: 14px; min-height: 60px; line-height: 1.8; color: var(--text); border: 0.5px solid var(--border); margin-top: 10px; white-space: pre-wrap; }
+.pg-line-call { color: #60a5fa; }
+.pg-line-ret  { color: #a78bfa; }
+.pg-line-base { color: #4ade80; }
+.pg-line-out  { color: #e2e8f0; }
+</style>
+</head>
+
+<body class="site-body">
+<div class="tutorial-shell">
+<header class="site-header">
+  <a class="site-logo" href="index.html"><span class="logo-mark">{ }</span><span class="logo-text">Interact<span>Lab</span></span></a>
+  <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+  <nav class="site-nav" aria-label="Main">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="bitwise-and-number-systems.html" class="nav-link">Bitwise &amp; Numbers</a>
+    <a href="recursion-and-big-o.html" class="nav-link active">Recursion &amp; Big-O</a>
+    <a href="sorting-algorithms.html" class="nav-link">Sorting</a>
+  </nav>
+</header>
+<section class="tutorial-hero">
+  <p class="breadcrumb"><a href="index.html">Home</a> / Recursion &amp; Big-O</p>
+  <h1>Recursion &amp; Big-O</h1>
+  <p class="hero-desc">Build intuition for base cases, the call stack, Fibonacci trees, growth curves, and a repeatable six-step method for writing recursive functions.</p>
+  <div class="hero-tags">
+    <span class="hero-tag">live call stack</span>
+    <span class="hero-tag">complexity charts</span>
+    <span class="hero-tag">Fibonacci tree</span>
+  </div>
+</section>
+<main class="tutorial-main">
+<h1>Recursion & Big-O — Interactive Teaching Visual</h1>
+
+<div class="bw-nav">
+  <button class="bw-tab active"  onclick="showPanel('intro')">1 — what is recursion</button>
+  <button class="bw-tab"         onclick="showPanel('stack')">2 — call stack live</button>
+  <button class="bw-tab"         onclick="showPanel('fibtree')">3 — fibonacci tree</button>
+  <button class="bw-tab"         onclick="showPanel('bigo')">4 — big-o visualiser</button>
+  <button class="bw-tab"         onclick="showPanel('six')">5 — 6-step method</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 1 — WHAT IS RECURSION
+══════════════════════════════════════════════════════════════════ -->
+<div id="p-intro" class="panel active">
+
+  <div class="bw-section">
+    <div class="bw-label">the core idea</div>
+    <div class="bw-card">
+      <h3>🪆 Recursion = a function that calls itself</h3>
+      <p>Every recursive function has exactly <strong>two parts</strong>. Both are required. If either is missing, the function breaks.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div class="bw-card" style="border-color:var(--green);border-width:1.5px">
+        <h3 style="color:var(--green)">✅ Base Case</h3>
+        <p>The <strong>stopping condition</strong>. When the problem is tiny enough to answer directly. <em>Write this first, always.</em> Without it → crash.</p>
+      </div>
+      <div class="bw-card" style="border-color:var(--amber);border-width:1.5px">
+        <h3 style="color:var(--amber)">🔁 Recursive Case</h3>
+        <p>The function calls <strong>itself with a smaller problem</strong>. Each call must bring the problem closer to the base case.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">countdown — the simplest possible recursion</div>
+    <code-block><span style="color:#94a3b8"># Step 1: write the BASE CASE first</span>
+<span style="color:#7dd3fc">def</span> <span style="color:#4ade80">countdown</span>(n):
+    <span style="color:#7dd3fc">if</span> n <span style="color:#f472b6">&lt;=</span> <span style="color:#fb923c">0</span>:          <span style="color:#94a3b8"># ← BASE CASE: stop here</span>
+        <span style="color:#4ade80">print</span>(<span style="color:#fde68a">'Done!'</span>)
+        <span style="color:#7dd3fc">return</span>
+    <span style="color:#4ade80">print</span>(n)          <span style="color:#94a3b8"># do something at this level</span>
+    <span style="color:#4ade80">countdown</span>(n <span style="color:#f472b6">-</span> <span style="color:#fb923c">1</span>)  <span style="color:#94a3b8"># ← RECURSIVE CASE: smaller!</span></code-block>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">factorial — recursion with a return value</div>
+    <code-block><span style="color:#7dd3fc">def</span> <span style="color:#4ade80">factorial</span>(n):
+    <span style="color:#7dd3fc">if</span> n <span style="color:#f472b6">==</span> <span style="color:#fb923c">0</span>:               <span style="color:#94a3b8"># BASE CASE: 0! = 1</span>
+        <span style="color:#7dd3fc">return</span> <span style="color:#fb923c">1</span>
+    <span style="color:#7dd3fc">return</span> n <span style="color:#f472b6">*</span> <span style="color:#4ade80">factorial</span>(n <span style="color:#f472b6">-</span> <span style="color:#fb923c">1</span>)  <span style="color:#94a3b8"># RECURSIVE CASE</span>
+
+<span style="color:#94a3b8"># factorial(4):
+# 4 × factorial(3)
+#     3 × factorial(2)
+#         2 × factorial(1)
+#             1 × factorial(0) ← base case → 1
+# ← 1×1=1 ← 2×1=2 ← 3×2=6 ← 4×6=24  ✓</span></code-block>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">recursion on strings and lists — same pattern</div>
+    <code-block><span style="color:#94a3b8"># Reverse a string recursively</span>
+<span style="color:#7dd3fc">def</span> <span style="color:#4ade80">reverse</span>(text):
+    <span style="color:#7dd3fc">if</span> text <span style="color:#f472b6">==</span> <span style="color:#fde68a">''</span>:             <span style="color:#94a3b8"># BASE CASE: empty string</span>
+        <span style="color:#7dd3fc">return</span> <span style="color:#fde68a">''</span>
+    <span style="color:#7dd3fc">return</span> <span style="color:#4ade80">reverse</span>(text[<span style="color:#fb923c">1</span>:]) <span style="color:#f472b6">+</span> text[<span style="color:#fb923c">0</span>]
+
+<span style="color:#94a3b8"># Sum a list recursively</span>
+<span style="color:#7dd3fc">def</span> <span style="color:#4ade80">list_sum</span>(nums):
+    <span style="color:#7dd3fc">if</span> nums <span style="color:#f472b6">==</span> []:              <span style="color:#94a3b8"># BASE CASE: empty list</span>
+        <span style="color:#7dd3fc">return</span> <span style="color:#fb923c">0</span>
+    <span style="color:#7dd3fc">return</span> nums[<span style="color:#fb923c">0</span>] <span style="color:#f472b6">+</span> <span style="color:#4ade80">list_sum</span>(nums[<span style="color:#fb923c">1</span>:])</code-block>
+    <p style="font-size:13px;color:var(--text2);margin-top:8px">Pattern: base case = empty input. Recursive case = operate on <span class="mono">first</span>, recurse on <span class="mono">rest</span>.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 2 — CALL STACK LIVE
+══════════════════════════════════════════════════════════════════ -->
+<div id="p-stack" class="panel">
+
+  <div class="bw-section">
+    <div class="bw-label">choose a function and input</div>
+    <div class="bw-input-row">
+      <div>
+        <div class="bw-label" style="margin-bottom:4px">function</div>
+        <select id="fn-select" onchange="resetStack()">
+          <option value="factorial">factorial(n)</option>
+          <option value="countdown">countdown(n)</option>
+          <option value="list_sum">list_sum(n items)</option>
+          <option value="reverse">reverse(n chars)</option>
+        </select>
+      </div>
+      <div>
+        <div class="bw-label" style="margin-bottom:4px">n =</div>
+        <input type="number" id="stack-n" value="4" min="1" max="7" onchange="resetStack()">
+      </div>
+      <button class="primary" onclick="resetStack()">reset</button>
+    </div>
+  </div>
+
+  <div class="stack-wrap">
+    <div class="stack-column">
+      <div class="stack-label-row">📦 call stack <span style="font-size:11px">(newest on top)</span></div>
+      <div class="stack-arena" id="stack-arena"></div>
+    </div>
+    <div class="stack-column">
+      <div class="stack-label-row">📋 execution log</div>
+      <div id="exec-log" style="font-family:var(--mono);font-size:12px;line-height:1.9;max-height:280px;overflow-y:auto;background:var(--bg2);border-radius:var(--radius-lg);padding:10px 14px;border:0.5px solid var(--border)"></div>
+    </div>
+  </div>
+
+  <div class="step-info" id="step-info">Press <strong>Next Step →</strong> to start the trace.</div>
+
+  <div class="step-controls">
+    <button onclick="prevStep()" id="btn-prev" disabled>← Prev</button>
+    <button onclick="nextStep()" id="btn-next" class="primary">Next Step →</button>
+    <button onclick="autoPlay()" id="btn-auto">▶ Auto</button>
+    <span class="step-counter" id="step-counter">step 0 / 0</span>
+    <span id="final-answer" style="font-size:13px;color:var(--teal-tab);font-family:var(--mono);font-weight:500"></span>
+  </div>
+
+  <hr class="divider">
+  <div class="bw-section">
+    <div class="bw-label">memory legend</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px">
+      <span><span class="tag tag-call">blue frame</span> = being called right now</span>
+      <span><span class="tag tag-base">green frame</span> = base case reached</span>
+      <span><span class="tag tag-ret">purple frame</span> = returning a value</span>
+      <span style="color:var(--text2)">grey = waiting for answer from below</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 3 — FIBONACCI TREE
+══════════════════════════════════════════════════════════════════ -->
+<div id="p-fibtree" class="panel">
+
+  <div class="bw-section">
+    <div class="bw-label">fibonacci call tree — visualise the repeated work</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Each node is one function call. Nodes with the same colour are computing the <strong>same value</strong> — wasted work. This is why naive Fibonacci is slow.</p>
+    <div class="bw-input-row">
+      <div>
+        <div class="bw-label" style="margin-bottom:4px">fib(n) — choose n</div>
+        <input type="range" id="fib-n" min="1" max="7" value="5" oninput="renderFibTree()">
+      </div>
+      <span style="font-size:22px;font-weight:500;min-width:60px;font-family:var(--mono)" id="fib-n-val">fib(5)</span>
+    </div>
+  </div>
+
+  <div class="fib-svg-wrap">
+    <svg id="fib-svg" width="100%" style="display:block"></svg>
+  </div>
+
+  <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px" id="fib-stats"></div>
+
+  <div class="fib-legend" id="fib-legend"></div>
+
+  <hr class="divider">
+  <div class="bw-section">
+    <div class="bw-label">why this matters — big-o of fibonacci</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="bw-card" style="border-color:var(--green);border-width:1.5px">
+        <h3 style="color:var(--green)">factorial(n) → O(n)</h3>
+        <p>One call per level. n calls total. Linear — manageable.</p>
+      </div>
+      <div class="bw-card" style="border-color:var(--red);border-width:1.5px">
+        <h3 style="color:var(--red)">fib(n) naive → O(2ⁿ)</h3>
+        <p>Two calls per level. Calls double each level. fib(40) = over a million calls!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 4 — BIG-O VISUALISER
+══════════════════════════════════════════════════════════════════ -->
+<div id="p-bigo" class="panel">
+
+  <div class="bw-section">
+    <div class="bw-label">drag to change n — watch the bars grow</div>
+    <div class="bw-input-row">
+      <input type="range" id="bigo-n" min="1" max="20" value="5" oninput="renderBigO()">
+      <span style="font-size:18px;font-weight:500;min-width:60px;font-family:var(--mono)" id="bigo-n-val">n = 5</span>
+    </div>
+    <div class="bigo-chart">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-align:right;margin-bottom:2px" id="bigo-ymax"></div>
+      <div class="bigo-bars-wrap" id="bigo-bars"></div>
+      <div class="bigo-x-labels" id="bigo-xlabels"></div>
+    </div>
+    <div class="bigo-legend">
+      <div class="bigo-leg-item"><div class="bigo-leg-dot" style="background:#1D9E75"></div> O(1) — constant</div>
+      <div class="bigo-leg-item"><div class="bigo-leg-dot" style="background:#1D4ED8"></div> O(log n) — logarithmic</div>
+      <div class="bigo-leg-item"><div class="bigo-leg-dot" style="background:#BA7517"></div> O(n) — linear</div>
+      <div class="bigo-leg-item"><div class="bigo-leg-dot" style="background:#B91C1C"></div> O(n²) — quadratic</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">complexity reference table</div>
+    <table class="cplx-table">
+      <tr><th>notation</th><th>name</th><th>example code</th><th>speed</th></tr>
+      <tr>
+        <td style="color:var(--green)">O(1)</td>
+        <td>constant</td>
+        <td><span class="mono">my_dict['key']</span> · <span class="mono">lst[0]</span></td>
+        <td><span class="badge badge-fast">fastest</span></td>
+      </tr>
+      <tr>
+        <td style="color:var(--blue)">O(log n)</td>
+        <td>logarithmic</td>
+        <td>binary search (Week 13)</td>
+        <td><span class="badge badge-fast">very fast</span></td>
+      </tr>
+      <tr>
+        <td style="color:var(--amber)">O(n)</td>
+        <td>linear</td>
+        <td>one <span class="mono">for</span> loop</td>
+        <td><span class="badge badge-ok">acceptable</span></td>
+      </tr>
+      <tr>
+        <td style="color:var(--amber)">O(n log n)</td>
+        <td>linearithmic</td>
+        <td>merge sort (Week 12)</td>
+        <td><span class="badge badge-ok">good for sorting</span></td>
+      </tr>
+      <tr>
+        <td style="color:var(--red)">O(n²)</td>
+        <td>quadratic</td>
+        <td>nested <span class="mono">for</span> loop</td>
+        <td><span class="badge badge-slow">slow — avoid</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">interactive: annotate this code</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Click each function to reveal its Big-O and why.</p>
+    <div id="anno-cards"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL 5 — 6-STEP METHOD
+══════════════════════════════════════════════════════════════════ -->
+<div id="p-six" class="panel">
+
+  <div class="bw-section">
+    <div class="bw-label">use these 6 steps on every problem — even easy ones</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Click a step to expand its example. The worked problem: <strong>"Find if a list has any duplicate names."</strong></p>
+
+    <div class="step6-grid" id="step6-grid"></div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">full worked example — brute force vs optimised</div>
+    <code-block><span style="color:#94a3b8"># Step 3 — Brute Force O(n²): two nested loops</span>
+<span style="color:#7dd3fc">def</span> <span style="color:#4ade80">has_duplicate_slow</span>(names):
+    <span style="color:#7dd3fc">for</span> i <span style="color:#7dd3fc">in</span> <span style="color:#4ade80">range</span>(<span style="color:#4ade80">len</span>(names)):
+        <span style="color:#7dd3fc">for</span> j <span style="color:#7dd3fc">in</span> <span style="color:#4ade80">range</span>(i <span style="color:#f472b6">+</span> <span style="color:#fb923c">1</span>, <span style="color:#4ade80">len</span>(names)):
+            <span style="color:#7dd3fc">if</span> names[i] <span style="color:#f472b6">==</span> names[j]:
+                <span style="color:#7dd3fc">return</span> <span style="color:#7dd3fc">True</span>
+    <span style="color:#7dd3fc">return</span> <span style="color:#7dd3fc">False</span>
+<span style="color:#94a3b8"># Big-O: O(n²) — loop inside a loop</span>
+
+<span style="color:#94a3b8"># Step 4 — Optimised O(n): use a dict as memory</span>
+<span style="color:#7dd3fc">def</span> <span style="color:#4ade80">has_duplicate_fast</span>(names):
+    seen <span style="color:#f472b6">=</span> {}
+    <span style="color:#7dd3fc">for</span> name <span style="color:#7dd3fc">in</span> names:          <span style="color:#94a3b8"># one loop = O(n)</span>
+        <span style="color:#7dd3fc">if</span> name <span style="color:#7dd3fc">in</span> seen:          <span style="color:#94a3b8"># dict lookup = O(1)</span>
+            <span style="color:#7dd3fc">return</span> <span style="color:#7dd3fc">True</span>
+        seen[name] <span style="color:#f472b6">=</span> <span style="color:#7dd3fc">True</span>
+    <span style="color:#7dd3fc">return</span> <span style="color:#7dd3fc">False</span>
+<span style="color:#94a3b8"># Big-O: O(n) — one loop, O(1) lookup inside</span></code-block>
+  </div>
+
+  <hr class="divider">
+
+  <div class="bw-section">
+    <div class="bw-label">recursion + big-o together</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="bw-card">
+        <h3>Counting recursive calls = Big-O</h3>
+        <p><span class="mono">factorial(n)</span> calls itself <em>n</em> times → <strong>O(n)</strong>.<br><span class="mono">fib(n)</span> calls itself twice per level → <strong>O(2ⁿ)</strong>. Draw the call tree in Panel 3 to see it.</p>
+      </div>
+      <div class="bw-card">
+        <h3>Brute force first, then optimise</h3>
+        <p>Naive recursion is often the "brute force" in Step 3. Step 4 asks: can I cache the results? (That is memoization — coming later in the course.)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   PANEL SWITCHER
+══════════════════════════════════════════════ */
+const PANELS = ['intro','stack','fibtree','bigo','six'];
+function showPanel(id) {
+  PANELS.forEach(p => document.getElementById('p-'+p).classList.toggle('active', p===id));
+  document.querySelectorAll('.bw-tab').forEach((t,i) => t.classList.toggle('active', PANELS[i]===id));
+  if(id==='stack')   { if(!stackInited) resetStack(); }
+  if(id==='fibtree') renderFibTree();
+  if(id==='bigo')    { renderBigO(); renderAnnoCards(); }
+  if(id==='six')     renderStep6();
+}
+
+/* ══════════════════════════════════════════════
+   PANEL 2 — CALL STACK TRACE
+══════════════════════════════════════════════ */
+let stackSteps = [], stackPtr = 0, autoTimer = null, stackInited = false;
+
+function buildSteps(fn, n) {
+  const steps = [];
+  // Each step: { frames: [{label, state, retVal}], info, logLine, answer }
+  // state: 'active' | 'waiting' | 'base' | 'returning'
+
+  if(fn === 'factorial') {
+    // Build call steps
+    let callFrames = [];
+    for(let i = n; i >= 0; i--) {
+      callFrames = [...callFrames, {label:`factorial(${i})`, n:i, state:'waiting', retVal:null}];
+      const frames = callFrames.map((f,idx) => ({...f, state: idx===callFrames.length-1 ? (i===0?'base':'active') : 'waiting'}));
+      steps.push({
+        frames: [...frames],
+        info: i===0
+          ? `<span class="highlight">Base case reached!</span> factorial(0) = 1. Python now works back up the stack.`
+          : `Python calls <span class="highlight">factorial(${i})</span>. It needs factorial(${i-1}) to finish, so it waits.`,
+        logLine: i===0
+          ? `<span class="pg-line-base">→ base case: factorial(0) = 1</span>`
+          : `<span class="pg-line-call">→ call: factorial(${i})</span>`,
+      });
+    }
+    // Return steps
+    let retFrames = [...callFrames];
+    const facts = [1];
+    for(let i=1; i<=n; i++) facts[i] = i*facts[i-1];
+    for(let i = 0; i <= n; i++) {
+      const retVal = facts[i];
+      retFrames = retFrames.map((f,idx) => {
+        if(f.n < i) return null;
+        if(f.n === i) return {...f, state:'returning', retVal};
+        return {...f, state: f.n===i+1?'active':'waiting'};
+      }).filter(Boolean);
+      const isLast = i===n;
+      steps.push({
+        frames: [...retFrames],
+        info: isLast
+          ? `<span class="highlight">factorial(${n}) = ${retVal}</span> — final answer returned. Stack is empty.`
+          : `factorial(${i}) returns <span class="highlight">${retVal}</span>. factorial(${i+1}) can now compute ${i+1} × ${retVal}.`,
+        logLine: `<span class="pg-line-ret">← return: factorial(${i}) = ${retVal}</span>`,
+        answer: isLast ? retVal : null
+      });
+    }
+    steps.push({frames:[], info:`✅ Stack is empty. Final answer: <span class="highlight">factorial(${n}) = ${facts[n]}</span>`, logLine:`<span class="pg-line-base">✅ done! answer = ${facts[n]}</span>`, answer:facts[n]});
+
+  } else if(fn === 'countdown') {
+    for(let i=n; i>=0; i--) {
+      const frames = [];
+      for(let j=n; j>=i; j--) frames.push({label:`countdown(${j})`, n:j, state: j===i?(j===0?'base':'active'):'waiting', retVal:null});
+      steps.push({
+        frames,
+        info: i===0
+          ? `<span class="highlight">Base case!</span> n=0, print 'Done!' and return.`
+          : `countdown(${i}): prints <span class="highlight">${i}</span>, then calls countdown(${i-1}).`,
+        logLine: i===0
+          ? `<span class="pg-line-base">→ base: print 'Done!'</span>`
+          : `<span class="pg-line-call">→ call: countdown(${i}) — prints ${i}</span>`,
+      });
+    }
+    // unwind
+    for(let i=1; i<=n; i++) {
+      const frames = [];
+      for(let j=n; j>=i; j--) frames.push({label:`countdown(${j})`, n:j, state: j===i?'returning':'waiting', retVal:null});
+      steps.push({
+        frames,
+        info: i===n ? `<span class="highlight">All done!</span> countdown(${n}) finishes.` : `countdown(${i}) returns. countdown(${i+1}) finishes.`,
+        logLine: `<span class="pg-line-ret">← return: countdown(${i}) done</span>`,
+        answer: i===n ? 'printed!' : null
+      });
+    }
+    steps.push({frames:[], info:`✅ Stack empty. All numbers printed.`, logLine:`<span class="pg-line-base">✅ done!</span>`, answer:'printed!'});
+
+  } else if(fn === 'list_sum') {
+    const items = Array.from({length:n},(_,i)=>i+1);
+    const subsum = (arr) => arr.reduce((a,b)=>a+b,0);
+    for(let i=0; i<=n; i++) {
+      const rem = items.slice(i);
+      const frames = [];
+      for(let j=0; j<=i; j++) frames.push({label:`list_sum([${items.slice(j).join(',')}])`, n:j, state: j===i?(rem.length===0?'base':'active'):'waiting', retVal:null});
+      steps.push({
+        frames,
+        info: rem.length===0
+          ? `<span class="highlight">Base case!</span> Empty list → return 0.`
+          : `list_sum([${rem.join(',')}]): takes <span class="highlight">${rem[0]}</span> + list_sum([${rem.slice(1).join(',')||''}]).`,
+        logLine: rem.length===0
+          ? `<span class="pg-line-base">→ base: list_sum([]) = 0</span>`
+          : `<span class="pg-line-call">→ call: list_sum([${rem.join(',')}])</span>`,
+      });
+    }
+    for(let i=n; i>=0; i--) {
+      const rem = items.slice(i);
+      const retVal = subsum(items.slice(i));
+      const frames = [];
+      for(let j=0; j<i; j++) frames.push({label:`list_sum([${items.slice(j).join(',')}])`, n:j, state:'waiting', retVal:null});
+      if(i<=n) frames.push({label:`list_sum([${rem.join(',')||''}])`, n:i, state:'returning', retVal});
+      steps.push({
+        frames: frames.filter(Boolean),
+        info: i===0
+          ? `<span class="highlight">list_sum([${items.join(',')}]) = ${retVal}</span> — final answer!`
+          : `list_sum([${rem.join(',')}]) returns <span class="highlight">${retVal}</span>.`,
+        logLine: `<span class="pg-line-ret">← return: list_sum([${rem.join(',')||''}]) = ${retVal}</span>`,
+        answer: i===0 ? retVal : null
+      });
+    }
+    steps.push({frames:[], info:`✅ Done! list_sum([${items.join(',')}]) = ${subsum(items)}`, logLine:`<span class="pg-line-base">✅ answer = ${subsum(items)}</span>`, answer:subsum(items)});
+
+  } else if(fn === 'reverse') {
+    const word = 'hello'.slice(0,n);
+    const rev = (s) => s.split('').reverse().join('');
+    for(let i=0; i<=n; i++) {
+      const rem = word.slice(i);
+      const frames = [];
+      for(let j=0; j<=i; j++) frames.push({label:`reverse("${word.slice(j)}")`, n:j, state: j===i?(rem===''?'base':'active'):'waiting', retVal:null});
+      steps.push({
+        frames,
+        info: rem===''
+          ? `<span class="highlight">Base case!</span> Empty string → return "".`
+          : `reverse("${rem}"): calls reverse("${rem.slice(1)}") then adds "${rem[0]}" at the end.`,
+        logLine: rem===''
+          ? `<span class="pg-line-base">→ base: reverse("") = ""</span>`
+          : `<span class="pg-line-call">→ call: reverse("${rem}")</span>`,
+      });
+    }
+    for(let i=n; i>=0; i--) {
+      const rem = word.slice(i);
+      const retVal = rev(rem);
+      const frames = [];
+      for(let j=0; j<i; j++) frames.push({label:`reverse("${word.slice(j)}")`, n:j, state:'waiting', retVal:null});
+      frames.push({label:`reverse("${rem}")`, n:i, state:'returning', retVal:`"${retVal}"`});
+      steps.push({
+        frames: frames.filter(f=>f),
+        info: i===0
+          ? `<span class="highlight">reverse("${word}") = "${retVal}"</span> — done!`
+          : `reverse("${rem}") returns <span class="highlight">"${retVal}"</span>.`,
+        logLine: `<span class="pg-line-ret">← return: reverse("${rem}") = "${retVal}"</span>`,
+        answer: i===0 ? `"${retVal}"` : null
+      });
+    }
+    steps.push({frames:[], info:`✅ Done! reverse("${word}") = "${rev(word)}"`, logLine:`<span class="pg-line-base">✅ answer = "${rev(word)}"</span>`, answer:`"${rev(word)}"`});
+  }
+  return steps;
+}
+
+function renderStackStep(ptr) {
+  const step = stackSteps[ptr];
+  if(!step) return;
+
+  const arena = document.getElementById('stack-arena');
+  arena.innerHTML = '';
+  if(step.frames.length === 0) {
+    arena.classList.add('empty');
+  } else {
+    arena.classList.remove('empty');
+    step.frames.slice().reverse().forEach(f => {
+      const el = document.createElement('div');
+      el.className = `frame ${f.state}`;
+      el.innerHTML = `<div class="frame-fn">${f.label}</div>` +
+        (f.retVal!==null ? `<div class="frame-ret">returns → ${f.retVal}</div>` : `<div class="frame-val">waiting...</div>`);
+      arena.appendChild(el);
+    });
+  }
+
+  document.getElementById('step-info').innerHTML = step.info;
+  document.getElementById('step-counter').textContent = `step ${ptr+1} / ${stackSteps.length}`;
+  document.getElementById('btn-prev').disabled = ptr===0;
+  document.getElementById('btn-next').disabled = ptr===stackSteps.length-1;
+
+  if(step.answer !== null && step.answer !== undefined) {
+    document.getElementById('final-answer').textContent = `answer = ${step.answer}`;
+  }
+
+  // Log
+  const log = document.getElementById('exec-log');
+  if(step.logLine) {
+    log.innerHTML += step.logLine + '\n';
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+function resetStack() {
+  stackInited = true;
+  clearInterval(autoTimer);
+  const fn = document.getElementById('fn-select').value;
+  const n = Math.min(7, Math.max(1, parseInt(document.getElementById('stack-n').value)||4));
+  stackSteps = buildSteps(fn, n);
+  stackPtr = 0;
+  document.getElementById('exec-log').innerHTML = '';
+  document.getElementById('final-answer').textContent = '';
+  document.getElementById('stack-arena').classList.remove('empty');
+  document.getElementById('stack-arena').innerHTML = '';
+  document.getElementById('step-info').innerHTML = 'Press <strong>Next Step →</strong> to start the trace.';
+  document.getElementById('step-counter').textContent = `step 0 / ${stackSteps.length}`;
+  document.getElementById('btn-prev').disabled = true;
+  document.getElementById('btn-next').disabled = false;
+}
+
+function nextStep() {
+  if(stackPtr < stackSteps.length) {
+    renderStackStep(stackPtr);
+    stackPtr++;
+  }
+}
+function prevStep() {
+  if(stackPtr > 1) {
+    stackPtr -= 2;
+    document.getElementById('exec-log').innerHTML = '';
+    document.getElementById('final-answer').textContent = '';
+    renderStackStep(stackPtr);
+    stackPtr++;
+  }
+}
+function autoPlay() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => {
+    if(stackPtr >= stackSteps.length) { clearInterval(autoTimer); return; }
+    renderStackStep(stackPtr);
+    stackPtr++;
+  }, 900);
+}
+
+/* ══════════════════════════════════════════════
+   PANEL 3 — FIBONACCI TREE
+══════════════════════════════════════════════ */
+const FIB_COLORS = ['#94a3b8','#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399','#fbbf24'];
+
+function buildFibTree(n) {
+  let idCtr = 0;
+  function build(v, depth) {
+    const id = idCtr++;
+    if(v <= 1) return {id, v, depth, children:[], isBase:true};
+    return {id, v, depth, children:[build(v-1,depth+1), build(v-2,depth+1)], isBase:false};
+  }
+  return build(n,0);
+}
+
+function layoutTree(node, x, y, hGap) {
+  const positions = {};
+  function assign(nd, px, py, spread) {
+    positions[nd.id] = {x:px, y:py, nd};
+    if(nd.children.length > 0) {
+      assign(nd.children[0], px - spread/2, py+60, spread/2);
+      assign(nd.children[1], px + spread/2, py+60, spread/2);
+    }
+  }
+  assign(node, x, y, hGap);
+  return positions;
+}
+
+function renderFibTree() {
+  const n = parseInt(document.getElementById('fib-n').value);
+  document.getElementById('fib-n-val').textContent = `fib(${n})`;
+  const root = buildFibTree(n);
+
+  // count calls per value
+  const callCount = {};
+  function count(nd) { callCount[nd.v]=(callCount[nd.v]||0)+1; nd.children.forEach(count); }
+  count(root);
+
+  const totalCalls = Object.values(callCount).reduce((a,b)=>a+b,0);
+
+  // Layout
+  const depth = n;
+  const svgW = Math.max(400, Math.min(700, 60 * Math.pow(2, Math.min(n,5))));
+  const svgH = (depth+1)*60 + 40;
+  const positions = layoutTree(root, svgW/2, 30, svgW*0.42);
+
+  // SVG
+  const svg = document.getElementById('fib-svg');
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.style.height = svgH+'px';
+
+  let edges = '', nodes = '';
+  const posArr = Object.values(positions);
+
+  // Draw edges first
+  posArr.forEach(({x,y,nd}) => {
+    nd.children.forEach(ch => {
+      const cp = positions[ch.id];
+      if(cp) edges += `<line x1="${x}" y1="${y}" x2="${cp.x}" y2="${cp.y}" stroke="var(--border2)" stroke-width="1"/>`;
+    });
+  });
+
+  // Draw nodes
+  posArr.forEach(({x,y,nd}) => {
+    const col = FIB_COLORS[nd.v % FIB_COLORS.length];
+    const isBase = nd.v <= 1;
+    const r = isBase ? 14 : 18;
+    const strokeW = callCount[nd.v] > 1 ? 2.5 : 1;
+    nodes += `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.85" stroke="${col}" stroke-width="${strokeW}"/>`;
+    nodes += `<text x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="${isBase?10:12}" font-weight="500">fib(${nd.v})</text>`;
+  });
+
+  svg.innerHTML = edges + nodes;
+
+  // Stats
+  document.getElementById('fib-stats').innerHTML = `
+    <span style="font-size:13px"><strong style="color:var(--teal-tab)">${totalCalls}</strong> total function calls</span>
+    <span style="font-size:13px;color:var(--text2)">≈ 2ⁿ = ${Math.pow(2,n)} (exponential!)</span>
+    <span style="font-size:13px;color:var(--text2)">depth = ${n} levels</span>`;
+
+  // Legend — show which values are called more than once
+  const repeated = Object.entries(callCount).filter(([k,v])=>v>1).map(([k,v])=>`fib(${k}) × ${v}`);
+  document.getElementById('fib-legend').innerHTML = repeated.length
+    ? `<span style="color:var(--amber)">⚠ Repeated calls (wasted work):</span> `+repeated.map(r=>`<span class="tag tag-rec">${r}</span>`).join(' ')
+    : `<span style="color:var(--green)">No repeated calls for n=${n}</span>`;
+}
+
+/* ══════════════════════════════════════════════
+   PANEL 4 — BIG-O VISUALISER
+══════════════════════════════════════════════ */
+function renderBigO() {
+  const n = parseInt(document.getElementById('bigo-n').value);
+  document.getElementById('bigo-n-val').textContent = `n = ${n}`;
+
+  const o1   = 1;
+  const olog = Math.log2(n);
+  const on   = n;
+  const on2  = n*n;
+  const maxVal = Math.max(on2, 1);
+
+  const COLORS = { o1:'#1D9E75', olog:'#1D4ED8', on:'#BA7517', on2:'#B91C1C' };
+  const LABELS = ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'];
+  const VALUES = [o1, olog, on, on2];
+  const COLS   = [COLORS.o1, COLORS.olog, COLORS.on, COLORS.on2];
+  const HEIGHT = 160;
+
+  document.getElementById('bigo-ymax').textContent = `max: ${on2} ops`;
+
+  document.getElementById('bigo-bars').innerHTML = VALUES.map((v,i) => {
+    const h = Math.max(4, Math.round((v/maxVal)*HEIGHT));
+    const ops = i===1 ? v.toFixed(1) : v;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">${ops}</span>
+      <div class="bigo-bar" style="width:100%;height:${h}px;background:${COLS[i]}" data-tip="${LABELS[i]}: ${ops} ops"></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('bigo-xlabels').innerHTML = LABELS.map(l=>
+    `<div class="bigo-x-label" style="font-family:var(--mono);font-size:12px">${l}</div>`).join('');
+}
+
+function renderAnnoCards() {
+  const fns = [
+    {
+      name: 'f1(items): return items[0]',
+      bigo: 'O(1)',
+      color: 'var(--green)',
+      why: 'No loop. Just directly accesses index 0. Same speed no matter how big the list is.',
+      example: 'n=10: 1 step\nn=1000: 1 step\nn=1,000,000: still 1 step'
+    },
+    {
+      name: 'f2(items):\n  for x in items: print(x)',
+      bigo: 'O(n)',
+      color: 'var(--amber)',
+      why: 'One loop that runs once per item. Double the list → double the time.',
+      example: 'n=10: 10 steps\nn=100: 100 steps\nn=1000: 1,000 steps'
+    },
+    {
+      name: 'f3(items):\n  for i in items:\n    for j in items: ...',
+      bigo: 'O(n²)',
+      color: 'var(--red)',
+      why: 'Loop inside a loop. Each of n items triggers another n steps. n×n total.',
+      example: 'n=10: 100 steps\nn=100: 10,000 steps\nn=1000: 1,000,000 steps!'
+    },
+    {
+      name: 'f4(d, key): return d.get(key)',
+      bigo: 'O(1)',
+      color: 'var(--green)',
+      why: 'Dict uses a hash table. Python jumps directly to the value. No loop needed.',
+      example: 'dict with 10 keys: 1 step\ndict with 1,000,000 keys: still 1 step'
+    },
+  ];
+
+  let open = -1;
+  document.getElementById('anno-cards').innerHTML = fns.map((f,i) => `
+    <div class="bw-card" id="ac-${i}" style="cursor:pointer;margin-bottom:8px" onclick="toggleAnno(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <pre style="font-family:var(--mono);font-size:12px;color:var(--text);background:none;padding:0;white-space:pre;flex:1">${f.name}</pre>
+        <span id="ac-badge-${i}" style="font-family:var(--mono);font-size:14px;font-weight:600;color:${f.color};margin-left:12px;flex-shrink:0">? click</span>
+      </div>
+      <div id="ac-reveal-${i}" style="display:none;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+        <div style="font-size:18px;font-weight:700;color:${f.color};font-family:var(--mono);margin-bottom:6px">${f.bigo}</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:8px">${f.why}</p>
+        <div style="background:var(--bg3);border-radius:var(--radius);padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--text2);white-space:pre">${f.example}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleAnno(i) {
+  const rev = document.getElementById('ac-reveal-'+i);
+  const badge = document.getElementById('ac-badge-'+i);
+  const fns = [
+    {bigo:'O(1)',color:'var(--green)'},{bigo:'O(n)',color:'var(--amber)'},
+    {bigo:'O(n²)',color:'var(--red)'},{bigo:'O(1)',color:'var(--green)'}
+  ];
+  const visible = rev.style.display==='block';
+  rev.style.display = visible ? 'none' : 'block';
+  badge.textContent = visible ? '? click' : fns[i].bigo;
+  badge.style.color = visible ? 'var(--text2)' : fns[i].color;
+}
+
+/* ══════════════════════════════════════════════
+   PANEL 5 — 6-STEP METHOD
+══════════════════════════════════════════════ */
+function renderStep6() {
+  const steps = [
+    {
+      num:'01', title:'Understand',
+      short:'Read the problem twice. Define input and output.',
+      body:'Before writing a single character of code, make sure you fully understand what the problem wants. Write it in your own words.',
+      example:`# Problem: "find if a list has duplicate names"
+# Input:  a list of strings → ['Adam','Sara','Adam']
+# Output: True or False
+# Rule:   True only if ANY name appears more than once`
+    },
+    {
+      num:'02', title:'Examples',
+      short:'Write 2–3 test cases by hand. Include edge cases.',
+      body:'Edge cases are inputs that might break your solution: empty list, single item, all duplicates. Write these BEFORE coding.',
+      example:`# Normal: ['Adam','Sara','Ali']   → False
+# Duplicate: ['Adam','Sara','Adam'] → True
+# Edge: []                          → False
+# Edge: ['Adam']                    → False (1 item can't dup)`
+    },
+    {
+      num:'03', title:'Brute Force',
+      short:'Write the simple, slow solution first.',
+      body:'Write the first solution that comes to mind, even if it is slow. A working O(n²) solution is better than a broken O(n) one.',
+      example:`def has_dup_slow(names):
+    for i in range(len(names)):
+        for j in range(i+1, len(names)):
+            if names[i] == names[j]:
+                return True
+    return False
+# Big-O: O(n²) — loop inside a loop`
+    },
+    {
+      num:'04', title:'Optimise',
+      short:'Can you reduce the Big-O? What data structure helps?',
+      body:'Ask yourself: what is the bottleneck? Usually a loop that does repeated work. A dict or set lets you remember things in O(1).',
+      example:`# Bottleneck: checking if name was seen before
+# Dict lookup is O(1) → use a dict as memory
+# One loop (O(n)) + O(1) lookup = O(n) total`
+    },
+    {
+      num:'05', title:'Code',
+      short:'Now write the actual code.',
+      body:'Only now do you write the final code. You already know it will work because you have examples to test it with.',
+      example:`def has_dup_fast(names):
+    seen = {}
+    for name in names:      # O(n)
+        if name in seen:    # O(1)
+            return True
+        seen[name] = True
+    return False`
+    },
+    {
+      num:'06', title:'Test',
+      short:'Run your examples from Step 2. Try the edge cases.',
+      body:'Run each test case from Step 2. If a test fails, go back to Step 3 — not Step 5.',
+      example:`print(has_dup_fast(['Adam','Sara','Adam']))  # True  ✓
+print(has_dup_fast(['Adam','Sara','Ali']))   # False ✓
+print(has_dup_fast([]))                     # False ✓
+print(has_dup_fast(['Adam']))               # False ✓`
+    }
+  ];
+
+  document.getElementById('step6-grid').innerHTML = steps.map((s,i) => `
+    <div class="step6-card" id="s6-${i}" onclick="toggleStep6(${i})">
+      <div class="step6-num">${s.num}</div>
+      <div class="step6-title">${s.title}</div>
+      <div style="font-size:12px;color:var(--text2)">${s.short}</div>
+      <div class="step6-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:8px">${s.body}</p>
+        <div class="step6-example">${s.example}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleStep6(i) {
+  const card = document.getElementById('s6-'+i);
+  card.classList.toggle('active');
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+renderBigO();
+renderAnnoCards();
+renderStep6();
+document.getElementById('bigo-n').addEventListener('input', renderBigO);
+</script>
+</main>
+<footer class="site-footer">
+  <p><a href="index.html">← All tutorials</a> · InteractLab</p>
+</footer>
+</div>
+<script src="assets/js/site.js"></script>
+</body>
+</html>
