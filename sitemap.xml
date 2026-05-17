@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/</loc>
+  </url>
+  <url>
+    <loc>/topics.html</loc>
+  </url>
+  <url>
+    <loc>/bitwise-and-number-systems.html</loc>
+  </url>
+  <url>
+    <loc>/recursion-and-big-o.html</loc>
+  </url>
+  <url>
+    <loc>/sorting-algorithms.html</loc>
+  </url>
+  <url>
+    <loc>/404.html</loc>
+  </url>
+</urlset>

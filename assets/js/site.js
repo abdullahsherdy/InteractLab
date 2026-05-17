@@ -18,3 +18,22 @@
     // silent fail
   }
 })();
+
+// Highlight current nav link by matching pathname
+(function () {
+  try {
+    var navLinks = document.querySelectorAll('.site-nav a.nav-link');
+    if (!navLinks || navLinks.length === 0) return;
+    var path = location.pathname.replace(/\/index\.html$/, '/');
+    navLinks.forEach(function (a) {
+      var href = a.getAttribute('href');
+      // Normalize
+      var norm = href.replace(/\/index\.html$/, '/');
+      if (norm === path || (path === '/' && (href === 'index.html' || href === '/'))) {
+        a.classList.add('active');
+      }
+    });
+  } catch (e) {
+    // ignore
+  }
+})();
