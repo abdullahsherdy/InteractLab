@@ -53,25 +53,38 @@
   line-height: 1;
 }
 
+/* ── Tab bar height variable ─────────────────────────────── */
+:root { --tab-h: 49px; }
+
 /* ── View containers ─────────────────────────────────────── */
 .view { display: none; }
-.view.active {
-  display: flex;
-  flex-direction: column;
+
+/* Revision: flex column so sidebar + content sit side by side */
+#view-revision.active  { display: flex; flex-direction: column; }
+/* Practice: plain block — page scrolls naturally */
+#view-practice.active  { display: block; }
+/* IDE: flex column — height comes from .ide-active body class */
+#view-ide.active       { display: flex; flex-direction: column; }
+
+/* ── IDE-active mode (toggled by JS on body) ─────────────── */
+/* Locks page scroll so the editor fills the viewport exactly  */
+body.ide-active { overflow: hidden; }
+
+body.ide-active .app-shell {
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
+}
+
+body.ide-active #view-ide.active {
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
-#view-practice.active {
-  overflow-y: auto;
-}
-
 /* ── Revision view ───────────────────────────────────────── */
+/* No overflow constraints here — page itself scrolls         */
 .revision-layout {
   display: flex;
-  flex: 1;
-  min-height: 0;
 }
 
 .topic-sidebar {
@@ -79,11 +92,13 @@
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   padding: 20px 0;
+  /* sticky works because NO ancestor has overflow:hidden      */
   position: sticky;
-  top: calc(var(--header-h) + 45px);
-  height: calc(100vh - var(--header-h) - 45px);
+  top: calc(var(--header-h) + var(--tab-h));
+  height: calc(100vh - var(--header-h) - var(--tab-h));
   overflow-y: auto;
   background: var(--bg-elevated);
+  align-self: flex-start; /* don't stretch to content height */
 }
 
 .sidebar-label {
@@ -142,8 +157,9 @@
 /* ── Topic content area ──────────────────────────────────── */
 .topic-content {
   flex: 1;
-  overflow-y: auto;
+  /* no overflow-y — page scrolls, sidebar sticky tracks it */
   padding: 0;
+  min-width: 0;
 }
 
 .topic-section {
@@ -712,11 +728,29 @@
   min-height: 0;
   overflow: hidden;
   background: #1e293b;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* floor so editor is never invisible */
+  min-height: 200px;
 }
 
-.cm-editor-wrap .cm-editor {
+/* CodeMirror 5 base styles */
+.cm-editor-wrap .CodeMirror {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
   height: 100%;
+  flex: 1;
+}
+
+/* In IDE-active mode: force CodeMirror to fill the flex parent */
+body.ide-active .cm-editor-wrap .CodeMirror {
+  height: 100% !important;
+}
+
+body.ide-active .cm-editor-wrap .CodeMirror-scroll {
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .output-content {

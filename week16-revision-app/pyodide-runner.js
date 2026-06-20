@@ -1,97 +1,90 @@
-const PYODIDE_VERSION = '0.26.4';
-const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+/* global Pyodide loader — works from file:// and HTTP */
+(function () {
+  var PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+  var pyodide = null;
+  var loadState = 'idle'; // 'idle' | 'loading' | 'ready' | 'error'
+  var loadError = null;
+  var waiters = [];
 
-let pyodide = null;
-let loadState = 'idle'; // 'idle' | 'loading' | 'ready' | 'error'
-let loadError = null;
-let loadListeners = [];
+  function isPyodideReady() { return loadState === 'ready'; }
 
-export function isPyodideReady() {
-  return loadState === 'ready';
-}
+  function loadPyodideIfNeeded(onProgress) {
+    if (loadState === 'ready') return Promise.resolve({ ok: true });
+    if (loadState === 'error') return Promise.resolve({ ok: false, error: loadError });
 
-export function getPyodideState() {
-  return { state: loadState, error: loadError };
-}
+    if (loadState === 'loading') {
+      return new Promise(function (resolve) { waiters.push(resolve); });
+    }
 
-export async function loadPyodideIfNeeded(onProgress) {
-  if (loadState === 'ready') return { ok: true };
-  if (loadState === 'error') return { ok: false, error: loadError };
+    loadState = 'loading';
+    if (onProgress) onProgress('Setting up Python in your browser — this happens once and takes a few seconds...');
 
-  if (loadState === 'loading') {
-    return new Promise((resolve) => loadListeners.push(resolve));
+    return new Promise(function (resolve) {
+      var script = document.createElement('script');
+      script.src = PYODIDE_CDN + 'pyodide.js';
+
+      script.onload = function () {
+        window.loadPyodide({ indexURL: PYODIDE_CDN }).then(function (py) {
+          pyodide = py;
+          loadState = 'ready';
+          var result = { ok: true };
+          waiters.forEach(function (fn) { fn(result); });
+          waiters = [];
+          resolve(result);
+        }).catch(function (err) {
+          loadState = 'error';
+          loadError = err.message || String(err);
+          var result = { ok: false, error: loadError };
+          waiters.forEach(function (fn) { fn(result); });
+          waiters = [];
+          resolve(result);
+        });
+      };
+
+      script.onerror = function () {
+        loadState = 'error';
+        loadError = 'Could not load Pyodide from CDN. Check your internet connection.';
+        var result = { ok: false, error: loadError };
+        waiters.forEach(function (fn) { fn(result); });
+        waiters = [];
+        resolve(result);
+      };
+
+      document.head.appendChild(script);
+    });
   }
 
-  loadState = 'loading';
-  onProgress?.('Setting up Python in your browser — this takes a few seconds the first time...');
+  function runPython(code, onProgress) {
+    return loadPyodideIfNeeded(onProgress).then(function (loaded) {
+      if (!loaded.ok) {
+        return { stdout: '', stderr: '', error: loaded.error, loadError: true };
+      }
 
-  try {
-    if (!window.loadPyodide) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = `${PYODIDE_CDN}pyodide.js`;
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('Could not load Pyodide from CDN. Check your internet connection.'));
-        document.head.appendChild(script);
+      return pyodide.runPythonAsync(
+        'import sys\nfrom io import StringIO\n_il_out = StringIO()\n_il_err = StringIO()\nsys.stdout = _il_out\nsys.stderr = _il_err\n'
+      ).then(function () {
+        return pyodide.runPythonAsync(code);
+      }).then(function () {
+        var stdout = pyodide.runPython('_il_out.getvalue()');
+        var stderr = pyodide.runPython('_il_err.getvalue()');
+        pyodide.runPython('sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__');
+        return { stdout: stdout, stderr: stderr, error: null };
+      }).catch(function (err) {
+        var stdout = '';
+        var stderr = '';
+        try { stdout = pyodide.runPython('_il_out.getvalue()'); } catch (e) {}
+        try { pyodide.runPython('sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__'); } catch (e) {}
+        return { stdout: stdout, stderr: '', error: cleanError(err.message || String(err)) };
       });
-    }
-
-    pyodide = await window.loadPyodide({ indexURL: PYODIDE_CDN });
-    loadState = 'ready';
-
-    const result = { ok: true };
-    loadListeners.forEach(fn => fn(result));
-    loadListeners = [];
-    return result;
-  } catch (err) {
-    loadState = 'error';
-    loadError = err.message;
-    const result = { ok: false, error: err.message };
-    loadListeners.forEach(fn => fn(result));
-    loadListeners = [];
-    return result;
-  }
-}
-
-export async function runPython(code, onProgress) {
-  const loaded = await loadPyodideIfNeeded(onProgress);
-  if (!loaded.ok) {
-    return { stdout: '', stderr: '', error: loaded.error, loadError: true };
+    });
   }
 
-  try {
-    await pyodide.runPythonAsync(`
-import sys
-from io import StringIO
-_il_stdout = StringIO()
-_il_stderr = StringIO()
-sys.stdout = _il_stdout
-sys.stderr = _il_stderr
-`);
-
-    let error = null;
-    try {
-      await pyodide.runPythonAsync(code);
-    } catch (err) {
-      error = formatPythonError(err.message);
-    }
-
-    const stdout = pyodide.runPython('_il_stdout.getvalue()');
-    const stderr = pyodide.runPython('_il_stderr.getvalue()');
-
-    await pyodide.runPythonAsync('sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__');
-
-    return { stdout, stderr, error };
-  } catch (err) {
-    return { stdout: '', stderr: '', error: err.message };
+  function cleanError(raw) {
+    if (!raw) return 'Unknown error';
+    return raw.split('\n')
+      .filter(function (l) { return l.indexOf('_il_out') === -1 && l.indexOf('_il_err') === -1 && l.indexOf('StringIO') === -1; })
+      .join('\n').trim() || raw;
   }
-}
 
-function formatPythonError(raw) {
-  if (!raw) return 'Unknown error';
-  const lines = raw.split('\n').filter(Boolean);
-  const trimmed = lines
-    .filter(l => !l.includes('_il_stdout') && !l.includes('_il_stderr') && !l.includes('StringIO'))
-    .join('\n');
-  return trimmed || raw;
-}
+  window.PyRunner = { isPyodideReady: isPyodideReady, loadPyodideIfNeeded: loadPyodideIfNeeded, runPython: runPython };
+})();
