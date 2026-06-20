@@ -34,14 +34,11 @@
     viewPractice.classList.toggle('active', tabId === 'practice');
     viewIde.classList.toggle('active',      tabId === 'ide');
 
-    // Lock page scroll in IDE mode so the editor fills the viewport
-    document.body.classList.toggle('ide-active', tabId === 'ide');
-
     if (tabId === 'ide' && !state.ideInitialised) {
       initIDE(null);
-    } else if (tabId === 'ide' && state.ideInstance && state.ideInstance.editor) {
-      // Refresh CodeMirror after it becomes visible
-      setTimeout(function () { state.ideInstance.editor.refresh(); }, 50);
+    } else if (tabId === 'ide' && state.ideInstance) {
+      // Re-measure and resize whenever the IDE tab is re-opened
+      setTimeout(function () { state.ideInstance.resize(); }, 80);
     }
 
     var topicSuffix = (tabId === 'revision' && state.activeTopic) ? '/' + state.activeTopic : '';
@@ -209,9 +206,11 @@
     if (state.ideInstance) {
       state.ideInstance.starterCode = starterCode;
       state.ideInstance.reset();
+      // Re-measure in case panel visibility changed (problem panel open/closed)
+      setTimeout(function () { state.ideInstance.resize(); }, 80);
     } else {
       state.ideInstance = new window.FullIDE(mountEl, { starterCode: starterCode });
-      state.ideInstance.init();
+      state.ideInstance.init(); // resize() is queued inside init()
     }
 
     outputEl.innerHTML = '<div class="output-idle">Output will appear here after you click Run.</div>';
@@ -318,6 +317,13 @@
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  // ── Resize handler ─────────────────────────────────────────────────────────
+  window.addEventListener('resize', function () {
+    if (state.activeTab === 'ide' && state.ideInstance) {
+      state.ideInstance.resize();
+    }
+  });
 
   // ── Boot ───────────────────────────────────────────────────────────────────
   buildRevision();

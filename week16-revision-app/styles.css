@@ -63,21 +63,11 @@
 #view-revision.active  { display: flex; flex-direction: column; }
 /* Practice: plain block — page scrolls naturally */
 #view-practice.active  { display: block; }
-/* IDE: flex column — height comes from .ide-active body class */
-#view-ide.active       { display: flex; flex-direction: column; }
-
-/* ── IDE-active mode (toggled by JS on body) ─────────────── */
-/* Locks page scroll so the editor fills the viewport exactly  */
-body.ide-active { overflow: hidden; }
-
-body.ide-active .app-shell {
-  height: calc(100vh - var(--header-h));
-  overflow: hidden;
-}
-
-body.ide-active #view-ide.active {
-  flex: 1;
-  min-height: 0;
+/* IDE: fixed height so the editor fills exactly the remaining viewport */
+#view-ide.active {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h) - var(--tab-h));
   overflow: hidden;
 }
 
@@ -728,29 +718,19 @@ body.ide-active #view-ide.active {
   min-height: 0;
   overflow: hidden;
   background: #1e293b;
-  display: flex;
-  flex-direction: column;
-  /* floor so editor is never invisible */
-  min-height: 200px;
 }
 
-/* CodeMirror 5 base styles */
+/* CodeMirror 5 — height is set in JS via editor.setSize(null, px)
+   These styles handle font and scrolling only */
 .cm-editor-wrap .CodeMirror {
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
-  height: 100%;
-  flex: 1;
 }
 
-/* In IDE-active mode: force CodeMirror to fill the flex parent */
-body.ide-active .cm-editor-wrap .CodeMirror {
-  height: 100% !important;
-}
-
-body.ide-active .cm-editor-wrap .CodeMirror-scroll {
-  height: 100%;
-  box-sizing: border-box;
+.cm-editor-wrap .CodeMirror-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .output-content {
