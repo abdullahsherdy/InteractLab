@@ -1,358 +1,646 @@
-# CLAUDE.md — Week 16 Revision Web App
-## Full Build Spec & Working Instructions
+# CLAUDE.md — InteractLab: Full Project Reference
+
+> **This file is the source of truth for all future work.**
+> It documents what is actually built, every technical decision made,
+> every bug fixed, and what to do (and not do) next time.
 
 ---
 
-## 0. What This Is
+## 0. Project Overview
 
-A **standalone, client-side-only web application** used live in a mentor session as
-**Week 16: the comprehensive revision week**, sitting between Week 15 (last regular
-content week) and Week 17 (Stacks & Queues — start of the DSA-heavy phase).
+**InteractLab** is Abdullah's teaching website — a collection of standalone,
+client-side-only interactive tools used live in 1-on-1 coding mentor sessions.
+No backend. No login. No build step. Everything runs in the browser.
 
-This is NOT a docx. This is NOT a normal weekly guide. It is a teaching tool: a single
-HTML/CSS/JS app (no backend, no build step required to run it — open `index.html` and
-it works) that lets the mentor walk the student through everything learned so far,
-let the student run real code inline as concepts are reviewed, then move into a bank
-of harder, multi-concept practice problems with a full IDE.
+**Hosted on GitHub Pages** (static, HTTPS).
+**Also works by double-clicking `index.html`** (file://) — this is a hard requirement
+because the mentor sometimes just opens the file locally.
 
-No server-side code anywhere. No login, no persistence beyond `localStorage` is NOT
-allowed inside Claude-generated artifacts in other contexts, but **this app is a
-standalone file delivered to run outside Claude.ai, in the student's own browser** —
-so normal `localStorage` IS fine here for saving in-progress code between problems.
-(This restriction only applies to Claude.ai Artifacts, not to delivered HTML files.)
+The site has two layers:
+1. **Main site shell** — homepage + existing topic tools (bitwise, recursion, sorting)
+2. **Week 16 Revision App** — the most complex tool, lives in `/week16-revision-app/`
 
 ---
 
-## 1. Audience & Voice
+## 1. Repository Structure
 
-- **Student:** Beginner, low English proficiency, has now completed Weeks 1–15.
-  Confident with basics, functions, OOP (with effort), recursion (with effort),
-  Big-O (conceptual), sorting algorithms.
-- **Tone:** Same as all prior materials — simple English, warm, second person,
-  analogy before abstraction. Do NOT introduce new jargon. Every concept
-  reviewed here should use the SAME analogy it was originally taught with
-  (see Section 4 below — these are not new explanations, they are reminders).
-- **Session context:** This is used live, mentor driving or co-driving with the
-  student at the keyboard. The mentor may jump around — this is why tab-based
-  nav with deep-linkable sections matters.
-
----
-
-## 2. Critical Constraint: Do Not Reference Week Numbers in the UI
-
-Per explicit instruction: **the guide must NOT label sections by week number.**
-Organize and label everything by **topic only**. Internally (in this CLAUDE.md,
-in code comments) it's fine to map topics back to weeks for content-accuracy
-purposes, but nothing user-facing should say "Week 3" or "Week 9" etc.
-
-Use topic names as section identifiers: "Functions", "Lists & Dictionaries",
-"File I/O & Errors", "OOP — Classes & Objects", "OOP — Inheritance & Dunders",
-"Recursion", "Big-O Notation", "Sorting Algorithms", etc.
-
----
-
-## 3. Tech Stack (Locked Decisions)
-
-| Decision | Choice | Why |
-|---|---|---|
-| Framework | **None — vanilla HTML/CSS/JS** (or vanilla + small utility libs if needed) | No server, no build step, must run by double-clicking `index.html` or simple static hosting |
-| Python execution | **Pyodide** (WebAssembly CPython), loaded from CDN, cached after first load | Confirmed acceptable — students have decent internet |
-| Code editor component | **CodeMirror 6** (via CDN/ESM) — syntax highlighting, line numbers, indent handling | Lightweight, no build step needed, good mobile support |
-| Persistence | `localStorage` for in-progress student code per problem (optional nice-to-have, not core requirement) | This is a delivered standalone app, not a Claude.ai artifact — localStorage is fine here |
-| Hosting/delivery | Single folder: `index.html`, `styles.css`, `app.js` (or a few split JS modules), no Node build step required at runtime | Mentor just opens the file or drops it on simple static hosting |
-
-**Pyodide loading strategy:**
-- Load Pyodide lazily — NOT on initial page load. Trigger the load (with a visible
-  loading state) the first time the student clicks "Run" on ANY code block (inline
-  try-it or full IDE). Cache the loaded instance globally for the rest of the session.
-- Show a clear, friendly loading indicator the first time ("Setting up Python in
-  your browser — this happens once and takes a few seconds...").
-- Handle the case where Pyodide fails to load (offline, blocked CDN) gracefully —
-  show a clear error, don't break the rest of the app.
+```
+InteractLab/
+├── index.html                        # Homepage — links to all tools
+├── topics.html                       # Topics listing page
+├── 404.html                          # Roadmap placeholder (not yet built)
+├── bitwise-and-number-systems.html   # Existing standalone tool
+├── recursion-and-big-o.html          # Existing standalone tool
+├── sorting-algorithms.html           # Existing standalone tool
+├── sitemap.xml
+├── assets/
+│   ├── css/site.css                  # Shared design system for ALL pages
+│   └── js/site.js                    # Shared JS (mobile nav toggle, copyright year)
+└── week16-revision-app/
+    ├── index.html                    # App shell — 3 tabs, loads all scripts
+    ├── styles.css                    # App-specific styles (builds on site.css)
+    ├── app.js                        # Main controller — routing, rendering, state
+    ├── pyodide-runner.js             # Pyodide load/execute wrapper
+    ├── README.md                     # How to open/host, how to update content
+    ├── content/
+    │   ├── topics.js                 # 13 topic sections as structured data
+    │   └── problems.js               # 10 practice problems as structured data
+    └── components/
+        ├── inline-runner.js          # Lightweight Try-It runner (Revision tab)
+        └── full-ide.js               # CodeMirror 5 IDE (IDE tab)
+```
 
 ---
 
-## 4. Content Scope — Topics to Cover (Weeks 1–15, topic-labeled)
+## 2. Main Site — Design System (site.css)
 
-Source of truth for accuracy: the original weekly guides' content (referenced via
-the established analogies/patterns below — re-derive details consistently with how
-this program has always taught them). Organize as **13 topic sections**, in this order:
+The shared design system is in `assets/css/site.css`. Every page links to it.
+The week16 app links to it as `../assets/css/site.css`.
 
-1. **Python Basics** — variables, types, type conversion, f-strings, input/output
-2. **Conditionals & Loops** — if/elif/else, for, while, break/continue
-3. **Functions & Lists** — def, return vs print (⚠️ flagged concept), parameters,
-   default params (⚠️ mutable default argument trap — flagged concept), list
-   indexing/slicing, append/pop
-4. **Dictionaries** — key-value pairs, `.get()`, `.items()`, looping, list vs dict
-5. **File I/O** — open/with, read/write, CSV basics, FileNotFoundError
-6. **Strings & Basic Error Handling** — string methods, slicing, try/except,
-   common exceptions
-7. **Advanced Operators, Comprehensions & Lambda** — all operators, bitwise intro,
-   list/dict comprehensions, lambda
-8. **OOP — Classes & Objects** — class, `__init__`, self, instance methods,
-   class/static methods
-9. **OOP — Encapsulation, Inheritance, Dunders** — `_protected`, `@property`,
-   inheritance, `super()`, `__str__`, `__len__`
-10. **Recursion** — base case, call stack, factorial, Fibonacci, string reversal
-11. **Big-O Notation** — O(1)/O(n)/O(n²)/O(log n)/O(n log n), the phone book
-    analogy, the 4 analysis rules, space complexity
-12. **Sorting Algorithms** — bubble, selection, insertion, merge, quick, stability
-13. **Putting It All Together** — a short closing section explicitly connecting
-    recursion + OOP + Big-O as the three pillars the next phase (data structures)
-    depends on, since Stacks/Queues/Linked Lists/Trees all lean on these three.
-
-### Two Concepts Requiring Extra (Triple) Emphasis
-Per established program priorities, these get a concept card AND a tip AND a row
-in the common-mistakes table, same as always:
-- **`return` vs `print`**
-- **Mutable default arguments** (`def f(scores=[])` trap)
-
-### Each Topic Section Should Contain
-- A short "remember the analogy" callout (re-use the original analogy, don't invent
-  a new one)
-- 1–2 compact concept reminders (not full re-teaching — this is revision, assume
-  prior exposure, just refresh)
-- One inline "Try It" runnable code snippet per section (lightweight runner, see
-  Section 6) demonstrating the core idea
-- A one-line "connects to" note showing what later topic depends on this one
-  (e.g., Recursion → "this is the engine behind tree traversal, coming up next")
-
-Do not pad this into 15 full lesson guides. This is revision — tight, scannable,
-fast to navigate live in a session. Favor concept cards + runnable examples over
-long prose.
-
----
-
-## 5. App Structure — Tab-Based Shell
-
-Three top-level tabs/views (confirmed):
-
-1. **Revision** — the 13 topic sections from Section 4, navigable via a sidebar or
-   top topic-picker within the tab (since there are 13 sections, some in-tab nav
-   is needed — a left rail of topic links with active-state highlighting and smooth
-   scroll/jump works well)
-2. **Practice** — the 10 practice problems (see Section 7), browsable as a list/grid
-   with topic tags and difficulty, click into a problem to open it
-3. **IDE** — the full-featured code IDE (see Section 8), which a problem from the
-   Practice tab opens into, but should also be reachable as a blank scratch IDE
-   directly from the tab itself (so the mentor can free-code anytime)
-
-**Navigation requirements:**
-- Persistent top-level tab bar, clearly indicating active tab
-- Keyboard accessible (tab/arrow navigation between tabs, Enter/Space to activate)
-- State should persist reasonably when switching tabs (e.g., don't lose IDE code
-  if the mentor flips to Revision and back)
-- Deep-linkable where reasonable (e.g., `#practice/problem-4` or `#revision/recursion`)
-  using simple hash routing — no router library needed
-
----
-
-## 6. Inline "Try It" Runner (Lightweight, for Revision tab)
-
-- Small, embedded directly under each concept's code example
-- Pre-filled with the example code (editable)
-- Single "Run ▶" button, output appears directly below (stdout captured from Pyodide)
-- No file I/O, no test cases, no starter-code scaffolding — just run and see output
-- Should be visually distinct from the full Practice IDE (smaller, lighter chrome)
-  so it reads as "quick demo" not "real workspace"
-- Errors from Python should be shown clearly but not alarmingly (this is a learning
-  tool — a traceback is useful information, style it readably, not as a scary red wall)
-
----
-
-## 7. Practice Problems — 10 Problems, Multi-Concept, No Auto-Grading
-
-**Confirmed approach:** ~10 problems, each meatier and spanning multiple topics
-rather than many small single-concept drills. **No automated output checking** —
-free-run only, mentor verifies correctness live. This matters for design — no
-test-runner UI, no pass/fail state needed, just Run + Output.
-
-**Each problem needs:**
-- Title
-- Topic tags (multi — e.g., `["OOP", "Recursion"]`) for future filtering even
-  though there's no week number shown
-- Difficulty badge (reuse existing palette: ✅ Easy, 🟡 Medium, 🔴 Medium-Hard —
-  consistent with established practice sheet conventions)
-- Problem statement (plain English, a real-world framing per program convention —
-  gradebook/inventory/contact-book style scenarios)
-- A hint (revealed on click/toggle, not shown by default — guides without
-  solving it for them)
-- Starter code in the IDE when opened (some structure but NOT a full solution —
-  consistent with the "no starter code for OOP reinforcement exercises" rule:
-  for OOP-heavy problems, give an empty shell/docstring only, not method bodies)
-
-**Suggested 10-problem spread (design these for real multi-concept depth):**
-1. Functions + Lists + Dictionaries — e.g., build and query a small gradebook
-2. File I/O + Error Handling + Dictionaries — e.g., read a CSV, handle bad rows safely
-3. Strings + Comprehensions + Lambda — e.g., clean/filter/transform a dataset of text
-4. OOP Classes & Objects (from scratch, no starter method bodies) — e.g., model a
-   real-world entity (Library/Inventory item) with validation
-5. OOP Inheritance + Dunders — e.g., extend problem 4's class hierarchy, add
-   `__str__`/`__len__`/`@property`
-6. Recursion — e.g., a recursive problem that isn't factorial/Fibonacci (program
-   has already covered those) — something like recursive directory-size style or
-   recursive flatten-a-nested-list
-7. Recursion + OOP combined — e.g., a recursive method on a class (foreshadows
-   trees/linked lists next phase)
-8. Big-O Analysis — given 2–3 code snippets (not just sorts), identify and justify
-   their Big-O; mentor verifies reasoning, not output
-9. Sorting + Big-O — implement one sort from scratch AND explain why it's that
-   complexity in a comment/docstring
-10. Capstone-style mixed problem — combines OOP + file I/O + a loop/sort, e.g.
-    "load student records from data, build objects, sort by score, report stats"
-    — deliberately the hardest, meant to feel like a small real program
-
-Feel free to refine exact scenarios, but keep the topic-spread above (this
-maps every major Week 1–15 pillar to at least one problem, with the back half
-deliberately foreshadowing OOP+Recursion as prerequisites for Weeks 17–24, per
-established program rationale).
-
----
-
-## 8. Full Practice IDE (for Practice tab problems + scratch use)
-
-- Built on CodeMirror 6, Python syntax highlighting
-- Layout: code editor pane + output console pane (split, resizable or fixed
-  sensible proportions — test on a typical laptop screen, this runs live in
-  session so it must be comfortable to read at presentation size/projector too)
-- Controls: Run ▶, Reset (restores starter code), Clear Output
-- When opened from a Practice problem: shows problem statement + hint toggle
-  alongside the editor (collapsible side panel so the editor can go full width
-  if needed)
-- When opened as scratch IDE from the tab directly: no problem panel, just a
-  clean blank editor
-- stdout/stderr from Pyodide captured and displayed in output pane, errors
-  styled readably (see Section 6 note on tracebacks)
-- Loading state while Pyodide initializes (shared/shown once per session,
-  not re-shown if already loaded from the inline runner)
-
----
-
-## 9. Visual Identity (MUST match existing program materials)
-
-Reuse the established palette from prior docx materials — this keeps visual
-continuity across all of Abdullah's teaching materials:
-
+**Key CSS variables defined in site.css:**
 ```css
 :root {
-  --navy: #1B3A5C;
-  --teal: #0D7377;
-  --teal-light: #E6F4F4;
-  --amber: #B45309;
-  --amber-light: #FEF3C7;
-  --green: #15803D;
-  --green-light: #DCFCE7;
-  --red: #B91C1C;
-  --red-light: #FEE2E2;
-  --orange: #C2410C;
-  --orange-light: #FFEDD5;
-  --purple: #6D28D9;
-  --purple-light: #EDE9FE;
-  --blue: #1D4ED8;
-  --blue-light: #DBEAFE;
-  --gray: #6B7280;
-  --gray-light: #F3F4F6;
-  --white: #FFFFFF;
-  --black: #111827;
-  --code-bg: #1E293B;
-  --code-text: #E2E8F0;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --bg: #fafaf9;
+  --bg-elevated: #ffffff;
+  --bg-muted: #f5f5f4;
+  --bg-subtle: #eeede9;
+  --text: #0f172a;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.14);
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.08);
+  --teal: #0d9488;
+  --teal-dark: #0f766e;
+  --teal-light: #ccfbf1;
+  --teal-glow: rgba(13, 148, 136, 0.25);
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+  --green: #059669;
+  --green-light: #d1fae5;
+  --header-h: 60px;               /* IMPORTANT — used in week16 app layout */
+  --content-wide: 1120px;
+  --content-narrow: 820px;
 }
 ```
 
-- Dark code blocks (`--code-bg` / `--code-text`), Courier New / monospace,
-  matching the docx materials exactly
-- Concept cards with colored left-accent borders, consistent with the docx
-  `conceptCard()` visual pattern (colored header strip + body)
-- Difficulty badges reuse the established style: ✅ Easy (green), 🟡 Medium
-  (amber), 🔴 Medium-Hard (red)
-- This is also referenced as visually consistent with `bitwise_number_Sys.html`
-  — the established CSS variable system and component look for all prior
-  interactive HTML tools in this program. If that file is available when this
-  is built, load and match it directly rather than reinventing from this list.
+**Dark mode:** `site.css` has a `prefers-color-scheme: dark` block that overrides
+bg/text/shadow variables. All components inherit dark mode automatically.
+
+**Components in site.css:** `.site-header`, `.site-nav`, `.site-footer`,
+`.tutorial-shell`, `.tutorial-hero`, `.tutorial-main`, `.home-wrap`,
+`.home-hero`, `.btn`, `.tutorial-card`, `.tutorial-grid`, `.path-steps`,
+`.features-row`, `.home-section`.
+
+**The nav on all tutorial pages** includes a "Python Revision" link pointing to
+`week16-revision-app/index.html`. This was added to all 4 existing pages:
+`bitwise-and-number-systems.html`, `recursion-and-big-o.html`,
+`sorting-algorithms.html`, `topics.html`.
 
 ---
 
-## 10. UX Requirements (Senior Front-End Bar)
+## 3. Week 16 Revision App — What It Is
 
-- **Accessibility:** semantic HTML, proper heading hierarchy, ARIA labels on
-  tab controls and the IDE run/reset buttons, sufficient color contrast
-  (verify amber/red text-on-light combos meet WCAG AA), full keyboard
-  navigability (tabs, accordions, run buttons — no mouse-only interactions),
-  visible focus states
-- **Responsive:** must work reasonably on a laptop (primary use case — live
-  session) down to tablet width; mobile-friendly is a bonus, not the priority
-- **Animations:** purposeful, not decorative noise — section transitions,
-  tab switches, hint reveal, output appearing after Run. Respect
-  `prefers-reduced-motion`.
-- **Performance:** Pyodide is the heavy cost (~6-20MB) — lazy-load it, show
-  real progress/loading feedback, never block the UI thread during execution
-  (Pyodide should run in a way that doesn't freeze tab-switching — consider
-  running Pyodide in a Web Worker if straightforward, otherwise ensure the
-  loading/running states are clearly communicated so freezes don't read as bugs)
-- **Error states:** Pyodide load failure, Python runtime errors, empty
-  code-run — all need clear, friendly, non-scary handling appropriate for
-  a beginner audience
+A standalone teaching tool for the **comprehensive revision session** between
+Weeks 15 and 17 of Abdullah's coding program. Three tabs:
+
+1. **Revision** — 13 topic sections with analogy callouts, concept cards,
+   inline runnable code examples, and "connects to" footers.
+2. **Practice** — 10 multi-concept practice problems in a card grid. Click a
+   card to open it in the IDE. No auto-grading — mentor verifies output live.
+3. **IDE** — CodeMirror 5 editor + output pane. Shows a problem statement +
+   hint panel when opened from Practice. Shows a scratch pad when opened
+   directly from the IDE tab.
+
+**Student profile:** Beginner, low English proficiency, completed Weeks 1–15.
+**Voice:** Simple English, warm, second person, analogy before abstraction.
+**Rule:** No week numbers in the UI. Topic names only.
 
 ---
 
-## 11. File Deliverables
+## 4. CRITICAL: Tech Stack Decisions (Do Not Change Without Reading This)
 
+### 4A. NO ES Modules
+
+**All JS uses the global namespace pattern, not ES module `import`/`export`.**
+
+Reason: Chrome blocks ES module imports when a page is opened from `file://`
+(cross-origin restriction). Since the mentor sometimes double-clicks `index.html`,
+ES modules would silently fail and nothing would render.
+
+**The pattern used:**
+```js
+// topics.js
+window.TOPICS = [...];
+
+// problems.js
+window.PROBLEMS = [...];
+
+// pyodide-runner.js
+window.PyRunner = { runPython, loadPyodideIfNeeded, isPyodideReady };
+
+// inline-runner.js
+window.InlineRunner = { create: function(container, code) {...} };
+
+// full-ide.js
+window.FullIDE = function(mountEl, options) {...};  // constructor
+
+// app.js — uses all of the above via window globals
 ```
-/week16-revision-app/
-├── index.html          # shell, tab structure, mounts everything
-├── styles.css           # full visual system (Section 9)
-├── app.js                # tab routing, state management
-├── pyodide-runner.js     # Pyodide load/init/execute wrapper, shared by both IDEs
-├── content/
-│   ├── topics.js         # the 13 topic sections' content as structured data
-│   └── problems.js        # the 10 practice problems as structured data
-├── components/
-│   ├── inline-runner.js   # lightweight Try-It component (Section 6)
-│   └── full-ide.js        # CodeMirror-based Practice IDE (Section 8)
-└── README.md              # how to open/host this, how to update content later
+
+Scripts are loaded as plain `<script>` tags at the **end of `<body>`** in
+dependency order. No `type="module"`. No `defer` needed (end-of-body scripts
+run after HTML is parsed). No `DOMContentLoaded` wrapper in app.js — the
+`buildRevision()`, `buildPractice()`, `handleHash()` calls run directly.
+
+### 4B. CodeMirror 5 (NOT CodeMirror 6)
+
+**Using CodeMirror 5.65.17 from cdnjs CDN.**
+
+Reason: CodeMirror 6 is ESM-only. It requires `import()` or `<script type="module">`,
+both of which fail from `file://` in Chrome. CodeMirror 5 ships as a traditional
+script bundle that works from any context.
+
+CDN links in `week16-revision-app/index.html`:
+```html
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
 ```
 
-Keep content (topic text, problem statements) in data files (`topics.js`,
-`problems.js`) separate from rendering logic — makes it easy for Abdullah to
-edit wording later without touching app logic.
+**CodeMirror 5 config used:**
+```js
+CodeMirror(mountEl, {
+  value: starterCode,
+  mode: 'python',
+  theme: 'one-dark',
+  lineNumbers: true,
+  indentUnit: 4,
+  tabSize: 4,
+  indentWithTabs: false,
+  lineWrapping: true,
+  autofocus: false,
+  extraKeys: { Tab: /* indent 4 spaces */ }
+});
+```
+
+### 4C. Pyodide v0.26.4
+
+**Loaded lazily from jsdelivr CDN on first Run click.**
+
+CDN: `https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js`
+
+Pyodide is NOT loaded on page load. It's injected as a `<script>` tag when the
+user first clicks Run. After that it's cached globally (`window.pyodide` via
+`loadPyodideIfNeeded()`). First load takes ~5–10 seconds on a decent connection.
+
+### 4D. Script load order in index.html
+
+```html
+<!-- CDN: CodeMirror 5 JS (must come first — FullIDE depends on it) -->
+<script src="https://cdnjs.cloudflare.com/...codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/...python.min.js"></script>
+
+<!-- App scripts in dependency order -->
+<script src="content/topics.js"></script>      <!-- sets window.TOPICS -->
+<script src="content/problems.js"></script>    <!-- sets window.PROBLEMS -->
+<script src="pyodide-runner.js"></script>      <!-- sets window.PyRunner -->
+<script src="components/inline-runner.js"></script>  <!-- sets window.InlineRunner -->
+<script src="components/full-ide.js"></script>       <!-- sets window.FullIDE -->
+<script src="app.js"></script>                 <!-- runs everything -->
+```
 
 ---
 
-## 12. Build Order (Recommended)
+## 5. Week 16 App — CSS Layout Architecture
 
-1. Static shell: tab bar, 3 empty views, routing, visual system in place
-2. Revision tab: render all 13 topics from structured data, sidebar nav working
-3. Pyodide wrapper: load-on-demand, execute(code) → {stdout, stderr}, with loading UI
-4. Inline Try-It runner wired into Revision tab code examples
-5. Practice tab: problem list/grid, tags, difficulty badges, click-through
-6. Full IDE: CodeMirror integration, problem panel, Run/Reset/Clear, wired to
-   the same Pyodide wrapper
-7. Polish pass: animations, accessibility audit, responsive check, error states
-8. Content accuracy pass: verify every topic section and problem against the
-   actual established teaching content/analogies from Weeks 1–15
+### 5A. Tab-bar height variable
+
+`styles.css` defines:
+```css
+:root { --tab-h: 49px; }
+```
+
+This is used alongside `--header-h` (from `site.css`) for calculating sticky
+positions and IDE height. If the tab bar ever changes size, update `--tab-h`.
+
+### 5B. View containers
+
+```css
+.view { display: none; }
+
+#view-revision.active { display: flex; flex-direction: column; }
+#view-practice.active { display: block; }
+#view-ide.active {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h) - var(--tab-h));
+  overflow: hidden;
+}
+```
+
+**Why the IDE has a fixed height:** The IDE must fill exactly the viewport height
+below the header and tab bar. Without an explicit height, the flex children
+(editor + output) collapse to zero height, making CodeMirror unclickable.
+
+**NEVER add `overflow: hidden` to `body` or `.app-shell` for the IDE.**
+This breaks `position: sticky` on the site header, causing it to
+detach and overlap the page — the dark editor background then appears as a
+"black rectangle" at the top of the page covering the toolbar. The current
+approach gives `#view-ide.active` a direct calculated height — no body side effects.
+
+### 5C. Revision sidebar sticky
+
+```css
+.topic-sidebar {
+  position: sticky;
+  top: calc(var(--header-h) + var(--tab-h));
+  height: calc(100vh - var(--header-h) - var(--tab-h));
+  overflow-y: auto;
+  align-self: flex-start;
+}
+```
+
+**`position: sticky` only works if NO ancestor has `overflow: hidden` or
+`overflow: auto`.** The revision layout has no overflow constraints — the
+page itself scrolls, and the sidebar sticks within that scroll.
+
+`.topic-content` (the main content area) also has NO `overflow-y: auto`.
+The page scrolls naturally. This is intentional.
+
+### 5D. CodeMirror height — JS-driven
+
+**CodeMirror 5 height is set entirely in JavaScript, not CSS.**
+
+The `FullIDE.resize()` method:
+1. Reads `this.mountEl.clientHeight` (the `#ide-mount` div's computed pixel height)
+2. Falls back to `.editor-pane` height minus the pane header if that returns 0
+3. Falls back to 480px as absolute minimum
+4. Calls `editor.setSize(null, h)` with the real pixel value
+5. Calls `editor.refresh()` to repaint
+
+`resize()` is called:
+- 80ms after `init()` (CSS must be applied before measuring)
+- 80ms when IDE tab is re-opened (re-measure after DOM settles)
+- 80ms when switching problems (panel visibility changes available width)
+- On every `window.resize` event
+
+**Never use `editor.setSize('100%', '100%')`.** This sets height to 100% of the
+parent, which fails if the parent's height comes purely from flexbox without a
+fixed ancestor height. **Never use `editor.refresh()` alone** — it repaints but
+does NOT fix a zero-height editor. `setSize(null, px)` is always required.
 
 ---
 
-## 13. Open Questions to Resolve Before/During Build
+## 6. Week 16 App — JavaScript Architecture
 
-- Exact wording for each of the 13 "remember the analogy" callouts — should
-  pull verbatim from how each concept was originally taught (function = recipe,
-  dict = phone book, try/except = seatbelt, O(log n) = phone book halving, etc.)
-  to stay consistent — confirm these analogies if a build session has access to
-  the full set of prior weekly guides, or re-derive carefully if not.
-- Final exact scenarios/wording for the 10 practice problems (Section 7 gives
-  the topic spread and shape — word them in the same plain-English, real-world
-  style as existing practice sheets).
-- Whether `bitwise_number_Sys.html` is available to pull exact CSS values from
-  directly, or whether the palette in Section 9 should be used as the sole source.
+### 6A. Global objects (all set on `window`)
+
+| Global | Set in | What it does |
+|---|---|---|
+| `window.TOPICS` | `content/topics.js` | Array of 13 topic objects |
+| `window.PROBLEMS` | `content/problems.js` | Array of 10 problem objects |
+| `window.PyRunner` | `pyodide-runner.js` | Pyodide load/execute wrapper |
+| `window.InlineRunner` | `components/inline-runner.js` | Inline Try-It factory |
+| `window.FullIDE` | `components/full-ide.js` | CodeMirror IDE constructor |
+
+### 6B. App state (in app.js IIFE)
+
+```js
+var state = {
+  activeTab:      'revision',   // 'revision' | 'practice' | 'ide'
+  activeTopic:    TOPICS[0].id, // currently highlighted sidebar topic
+  activeProblem:  null,         // problem object or null (scratch mode)
+  ideInstance:    null,         // FullIDE instance (created once, reused)
+  ideInitialised: false         // whether initIDE() has been called
+};
+```
+
+### 6C. Hash routing
+
+| Hash | Result |
+|---|---|
+| (none) or `#revision` | Revision tab |
+| `#revision/topic-id` | Revision tab, scrolls to that topic |
+| `#practice` | Practice tab |
+| `#ide` | IDE tab, scratch mode |
+| `#ide/problem-id` | IDE tab, loads that problem |
+
+Hash is updated via `history.replaceState()` whenever tab or topic changes.
+`hashchange` event handles browser back/forward.
+
+### 6D. PyRunner API
+
+```js
+window.PyRunner.runPython(code, onProgress)
+  // Returns Promise<{ stdout, stderr, error, loadError }>
+  // onProgress(message) is called while Pyodide is loading
+  // loadError: true means Pyodide itself failed to load (not a Python error)
+
+window.PyRunner.loadPyodideIfNeeded(onProgress)
+  // Returns Promise<{ ok, error }>
+  // Safe to call multiple times — concurrent callers queue and resolve together
+
+window.PyRunner.isPyodideReady()
+  // Returns bool — synchronous check
+```
+
+### 6E. FullIDE API
+
+```js
+var ide = new window.FullIDE(mountEl, { starterCode: '...' });
+ide.init();       // creates CodeMirror, queues resize()
+ide.resize();     // measures container, calls setSize(null, h), refresh()
+ide.getCode();    // returns string
+ide.setCode(s);   // sets editor content
+ide.reset();      // restores starterCode
+ide.run(outputEl, runBtn);  // runs code via PyRunner, renders result
+```
+
+### 6F. InlineRunner API
+
+```js
+window.InlineRunner.create(container, code);
+// container: a .inline-runner DOM element (with .runner-code, .runner-run-btn, .runner-output inside)
+// code: the pre-filled Python code string
+// Wires up the Run button, Tab key handling, output display
+```
 
 ---
 
-## 14. Non-Goals (Explicitly Out of Scope)
+## 7. Content Data Format
 
-- No backend, no database, no user accounts
-- No auto-grading / test-case validation on practice problems
-- No week numbers anywhere in the UI
-- No new frameworks (React/Vue/etc.) unless a future session explicitly
-  decides one is warranted — default is vanilla JS + CodeMirror
-- Not a replacement for the docx weekly guides — this is a session tool only
+### 7A. topics.js — Topic object shape
+
+```js
+{
+  id: 'python-basics',          // kebab-case, used as URL hash and DOM id
+  title: 'Python Basics',       // display title
+  analogy: 'HTML string...',    // the "remember this" callout — can contain HTML tags
+  concepts: [
+    {
+      title: 'Variables & Types',
+      body: 'HTML string...',   // can contain <code>, <strong>, <em>
+      type: 'warning',          // optional — adds left amber border
+      badge: '⚠️ Common mistake' // optional — shown in concept card header
+    }
+  ],
+  tryItCode: 'Python code as \n-escaped string', // NOT a template literal
+  connectsTo: 'plain text string'
+}
+```
+
+**IMPORTANT:** `tryItCode` must be a regular JS string with `\n` for newlines,
+NOT a template literal. Template literals caused issues with the linter and
+future edits. Python f-strings like `f"{name}"` are safe in JS strings since
+`{name}` without `$` is not interpolated by JavaScript.
+
+### 7B. problems.js — Problem object shape
+
+```js
+{
+  id: 'p1',                          // used as URL hash
+  title: 'Gradebook Builder',
+  tags: ['Functions', 'Lists', 'Dictionaries'],
+  difficulty: 'easy',                // 'easy' | 'medium' | 'medium-hard'
+  statement: 'Multi-line string...',  // shown in problem panel and card
+  hint: 'Multi-line string...',       // revealed on click in problem panel
+  starterCode: 'Python code...'       // loaded into IDE when problem is opened
+}
+```
+
+### 7C. The 13 Topics (in order)
+
+| # | id | Title |
+|---|---|---|
+| 1 | `python-basics` | Python Basics |
+| 2 | `conditionals-loops` | Conditionals & Loops |
+| 3 | `functions-lists` | Functions & Lists |
+| 4 | `dictionaries` | Dictionaries |
+| 5 | `file-io` | File I/O |
+| 6 | `strings-errors` | Strings & Error Handling |
+| 7 | `comprehensions-lambda` | Comprehensions & Lambda |
+| 8 | `oop-classes` | OOP — Classes & Objects |
+| 9 | `oop-inheritance` | OOP — Encapsulation, Inheritance & Dunders |
+| 10 | `recursion` | Recursion |
+| 11 | `big-o` | Big-O Notation |
+| 12 | `sorting` | Sorting Algorithms |
+| 13 | `putting-together` | Putting It All Together |
+
+### 7D. The 10 Practice Problems (in order)
+
+| # | id | Title | Tags | Difficulty |
+|---|---|---|---|---|
+| 1 | `p1` | Gradebook Builder | Functions, Lists, Dictionaries | Easy |
+| 2 | `p2` | CSV Data Processor | File I/O, Error Handling, Dictionaries | Medium |
+| 3 | `p3` | Text Cleaner & Analyser | Strings, Comprehensions, Lambda | Easy |
+| 4 | `p4` | Library System — Classes from Scratch | OOP, Classes | Medium |
+| 5 | `p5` | Extended Library — Inheritance & Dunders | OOP, Inheritance, Dunders | Medium |
+| 6 | `p6` | Recursive List Flattener | Recursion | Medium |
+| 7 | `p7` | Binary Search Tree — Recursion + OOP | Recursion, OOP | Medium-Hard |
+| 8 | `p8` | Big-O Detective | Big-O | Medium |
+| 9 | `p9` | Implement Insertion Sort + Justify Big-O | Sorting, Big-O | Medium |
+| 10 | `p10` | Student Records Capstone | OOP, File I/O, Sorting, Error Handling | Medium-Hard |
+
+---
+
+## 8. Bugs Encountered and Their Fixes
+
+This section is critical. These bugs were real and cost significant debugging
+time. Do not re-introduce these patterns.
+
+### Bug 1: Blank page — ES modules don't work from file://
+
+**Symptom:** Revision tab shows nothing. No errors visible to user.
+
+**Cause:** Original code used `<script type="module">` and `import`/`export`.
+Chrome silently blocks ES module cross-origin requests from `file://`.
+
+**Fix:** Converted everything to plain `<script>` tags with `window` globals.
+No `import`, no `export`, no `type="module"` anywhere.
+
+### Bug 2: DOMContentLoaded never fired
+
+**Symptom:** After fixing ES modules, content still didn't load.
+
+**Cause:** Inside the module, `document.addEventListener('DOMContentLoaded', ...)`
+was called. But with `<script>` at the end of `<body>` (not a module), the DOM
+is already parsed when the script runs — `DOMContentLoaded` may have already
+fired or the timing is unreliable.
+
+**Fix:** Removed the `DOMContentLoaded` wrapper. `buildRevision()`,
+`buildPractice()`, `handleHash()` are called directly at the bottom of app.js
+inside the IIFE. Scripts at end of body run after HTML is parsed — no event
+needed.
+
+### Bug 3: Sidebar disappears on scroll
+
+**Symptom:** Sidebar is visible on page load but vanishes when the user scrolls
+down through the revision topics.
+
+**Cause:** `.view.active` had `overflow: hidden`. This creates a new scroll
+container and breaks `position: sticky` on any descendant. Sticky elements only
+stick relative to their nearest scrolling ancestor — if that ancestor has
+`overflow: hidden`, sticky never activates.
+
+**Fix:**
+- Removed `overflow: hidden` from `.view.active` entirely.
+- Removed `overflow-y: auto` from `.topic-content` — the PAGE itself now scrolls.
+- Sidebar `position: sticky` now sticks relative to the viewport (the body scroll).
+- Added `align-self: flex-start` to sidebar so it doesn't stretch to the full
+  height of the (potentially very long) content column.
+
+### Bug 4: CodeMirror editor not writable / zero height
+
+**Symptom:** IDE tab opens, editor appears but clicking in it does nothing.
+
+**Cause 1 (original):** `editor.setSize('100%', '100%')` sets CSS height to
+`100%` of the parent. If the parent has no explicit pixel height (only a
+flex-derived height), `100%` resolves to 0.
+
+**Cause 2 (after first fix attempt):** `editor.refresh()` alone does not change
+the editor's height — it only repaints at its current (zero) height.
+
+**Fix:** `FullIDE.resize()` method:
+```js
+var h = this.mountEl.clientHeight;
+if (!h || h < 50) { /* walk up to .editor-pane, subtract header */ }
+if (!h || h < 50) h = 480;  // absolute fallback
+this.editor.setSize(null, h);  // sets explicit pixel height
+this.editor.refresh();          // repaints at new height
+```
+
+Called after 80ms delay (so CSS has been applied before measuring).
+
+### Bug 5: Black rectangle covers toolbar / "IDE crashed"
+
+**Symptom:** After opening the IDE tab, a black block appears at the TOP of the
+page — sometimes before the IDE view even — covering the Run/Reset buttons and
+the problem panel header.
+
+**Cause:** A previous fix tried `body.ide-active { overflow: hidden }` to lock
+the page scroll for the IDE. This breaks `position: sticky` on the
+`<header class="site-header">`. When sticky fails on the header, the
+`app-shell` (which had `height: calc(100vh - header-h)`) starts from `y=0`
+instead of below the header. The dark `#1e293b` background of `.cm-editor-wrap`
+fills that mis-positioned space, appearing as a black rectangle that overlaps
+the toolbar.
+
+**Fix:** Removed ALL `body.ide-active` CSS and JS. Instead, `#view-ide.active`
+gets a direct explicit height in CSS:
+```css
+#view-ide.active {
+  height: calc(100vh - var(--header-h) - var(--tab-h));
+  overflow: hidden;
+}
+```
+
+No body manipulation. No `position: sticky` breakage. Clean.
+
+---
+
+## 9. Rules for Future Work
+
+1. **Never add `overflow: hidden` to `body`, `html`, or `.app-shell`** unless
+   you have thoroughly verified sticky positioning still works everywhere.
+
+2. **Never use ES module syntax** (`import`/`export`/`type="module"`) in this
+   project. Always use `window.Foo = ...` globals.
+
+3. **Never use `editor.setSize('100%', '100%')`** or `editor.refresh()` alone
+   to fix CodeMirror height. Always measure the container with `clientHeight`
+   and pass a pixel value to `setSize(null, h)`.
+
+4. **Never use template literals for multi-line Python code strings in topics.js
+   or problems.js.** Use regular strings with `\n` escapes. Template literals
+   caused linter issues.
+
+5. **Never put topic content inline in app.js or index.html.** Content lives
+   in `content/topics.js` and `content/problems.js` only. This is what lets
+   Abdullah edit wording without touching logic.
+
+6. **Never add week numbers to the UI.** Topic names only. This is a standing
+   instruction from Abdullah.
+
+7. **Never add auto-grading.** Practice problems run free — mentor verifies
+   output live. No pass/fail states.
+
+8. **Do not upgrade CodeMirror to v6** without solving the file:// constraint
+   first (e.g., pre-bundling with esbuild into a single UMD file).
+
+---
+
+## 10. Main Site Integration
+
+The week16 revision app is integrated into the main site:
+
+- **Homepage (`index.html`):** Has a tutorial card linking to
+  `week16-revision-app/index.html` with tags: OOP, recursion, Big-O, sorting, Pyodide.
+- **All tutorial pages:** `bitwise-and-number-systems.html`,
+  `recursion-and-big-o.html`, `sorting-algorithms.html`, `topics.html` — all
+  have "Python Revision" added to their `<nav>` linking to the app.
+- **The revision app** links back to the main site with
+  `<a href="../index.html">` for the logo and "Home" nav link.
+
+---
+
+## 11. Hosting & Deployment
+
+- **GitHub Pages** — push to `main` branch, GitHub deploys automatically.
+- All paths are relative — no hardcoded domain or repo name.
+- All CDN resources (CodeMirror, Pyodide) are fetched at runtime from
+  external CDNs. No local copies of CDN files.
+- **Pyodide requires HTTPS or localhost** for full functionality (WASM and
+  SharedArrayBuffer APIs). GitHub Pages provides HTTPS. Local `file://` works
+  for most Pyodide features (basic Python execution).
+- First Pyodide load: ~5–10 seconds on a decent connection, ~10MB download.
+  Pyodide is cached by the browser after first load.
+
+---
+
+## 12. What Still Doesn't Exist (Future Work)
+
+- **localStorage persistence** — saving in-progress IDE code per problem
+  between sessions. Planned but not implemented.
+- **Roadmap page** — `404.html` is a placeholder. A real roadmap/curriculum
+  overview page for the full course hasn't been built.
+- **Mobile sidebar** — the sidebar is hidden on `<700px` via CSS. On mobile
+  there's no way to jump between topics. A dropdown or drawer alternative
+  for small screens hasn't been built.
+- **Problem filtering by tag** — the practice grid shows all 10 problems. A
+  filter by topic tag (e.g., show only OOP problems) would be useful.
+- **More InteractLab tools** — the existing three (bitwise, recursion, sorting)
+  are complete. Future topics (linked lists, stacks, queues, trees) would each
+  get their own standalone tool.
+
+---
+
+## 13. Audience & Content Voice (Unchanged)
+
+- **Student:** Beginner, low English proficiency, completed Weeks 1–15 of
+  Abdullah's coding program.
+- **Tone:** Simple English, warm, second person, analogy before abstraction.
+  Do NOT introduce jargon. Every reviewed concept uses the SAME analogy it was
+  originally taught with.
+- **Key analogies to preserve:**
+  - Variable = labelled box
+  - Function = recipe
+  - Dictionary = phone book
+  - try/except = seatbelt
+  - Recursion = Russian nesting dolls
+  - Big-O O(log n) = phone book halving strategy
+  - Class = blueprint; object = building from that blueprint
+  - Inheritance = child learning the family trade
+  - Sorting = tidying a bookshelf with different strategies
