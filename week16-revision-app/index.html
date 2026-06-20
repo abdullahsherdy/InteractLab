@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Python comprehensive revision — 13 interactive topic reviews with runnable examples and 10 practice problems. Covers everything from basics through OOP, recursion, and sorting.">
+  <title>Python Revision — InteractLab</title>
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="site-body">
+
+  <!-- Shared site header -->
+  <header class="site-header">
+    <a class="site-logo" href="../index.html">
+      <span class="logo-mark">{ }</span>
+      <span class="logo-text">Interact<span>Lab</span></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../index.html" class="nav-link">Home</a>
+      <a href="../404.html" class="nav-link">Roadmap</a>
+      <a href="index.html" class="nav-link active">Python Revision</a>
+    </nav>
+  </header>
+
+  <!-- App shell -->
+  <div class="app-shell">
+
+    <!-- Tab bar -->
+    <div class="tab-bar" role="tablist" aria-label="App sections">
+      <button class="tab-btn active" role="tab" data-tab="revision" aria-selected="true" id="tab-revision">
+        <span class="tab-icon">📖</span> Revision
+      </button>
+      <button class="tab-btn" role="tab" data-tab="practice" aria-selected="false" id="tab-practice">
+        <span class="tab-icon">✏️</span> Practice
+      </button>
+      <button class="tab-btn" role="tab" data-tab="ide" aria-selected="false" id="tab-ide">
+        <span class="tab-icon">⌨️</span> IDE
+      </button>
+    </div>
+
+    <!-- ── Revision view ── -->
+    <div id="view-revision" class="view active" role="tabpanel" aria-labelledby="tab-revision">
+      <div class="revision-layout">
+        <nav class="topic-sidebar" aria-label="Topic navigation" id="topic-sidebar"></nav>
+        <div class="topic-content" id="topic-content"></div>
+      </div>
+    </div>
+
+    <!-- ── Practice view ── -->
+    <div id="view-practice" class="view" role="tabpanel" aria-labelledby="tab-practice">
+      <div class="practice-view" id="practice-content"></div>
+    </div>
+
+    <!-- ── IDE view ── -->
+    <div id="view-ide" class="view" role="tabpanel" aria-labelledby="tab-ide">
+      <div class="ide-view">
+
+        <!-- Problem panel (hidden when scratch mode) -->
+        <aside class="ide-problem-panel hidden" id="ide-problem-panel" aria-label="Problem description"></aside>
+
+        <!-- Editor + output workspace -->
+        <div class="ide-workspace">
+          <div class="ide-toolbar">
+            <button class="ide-btn primary" id="ide-run-btn" aria-label="Run code">▶ Run</button>
+            <button class="ide-btn" id="ide-reset-btn" aria-label="Reset to starter code">↺ Reset</button>
+            <span class="ide-scratch-label" id="ide-scratch-label"></span>
+          </div>
+
+          <div class="ide-panes">
+            <div class="editor-pane" aria-label="Code editor">
+              <div class="pane-header">Python</div>
+              <div class="cm-editor-wrap" id="ide-mount"></div>
+            </div>
+
+            <div class="output-pane" aria-label="Output">
+              <div class="pane-header">
+                Output
+                <button class="clear-btn" id="ide-clear-btn" aria-label="Clear output">clear</button>
+              </div>
+              <div class="output-content" id="ide-output" role="log" aria-live="polite">
+                <div class="output-idle">Output will appear here after you click Run.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-shell -->
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
